@@ -1,0 +1,526 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-bg-primary: #FFFFFF;
+  --color-surface-secondary: #FFFFFF;
+  --color-text-primary: #000000;
+  --color-text-secondary: #555555;
+
+  --color-forest: #1E4636;
+  --color-coral: #FF6600;
+  --color-gold: #B0651A;
+  --color-dusty: #666666;
+}
+
+body {
+  background-color: var(--bg-primary, #FFFFFF);
+  color: var(--text-primary, #000000);
+  font-family: var(--font-sans);
+}
+
+:root {
+  --bg-primary: #FFFFFF;
+  --surface-secondary: #FFFFFF;
+  --text-primary: #000000;
+  --text-secondary: #555555;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --sidebar-bg: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --card-hover-border: rgba(0, 0, 0, 0.2);
+  --card-shadow: rgba(0, 0, 0, 0.03);
+  --card-shadow-hover: rgba(0, 0, 0, 0.08);
+  --input-bg: #FFFFFF;
+  --input-border: rgba(0, 0, 0, 0.15);
+  --btn-accent-bg: #FFDD44;
+  --btn-accent-text: #111315;
+  --btn-secondary-bg: #FAF6CF;
+  --btn-secondary-border: rgba(0, 0, 0, 0.1);
+  --btn-secondary-text: #111315;
+  --font-scale: 1;
+}
+
+html {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+}
+
+html.dark-theme, body.dark-theme, .dark-theme {
+  --bg-primary: #0C0E10 !important;
+  --surface-secondary: #14171A !important;
+  --text-primary: #FAF8F5 !important;
+  --text-secondary: #B5B8BE !important;
+  --border-color: rgba(255, 255, 255, 0.08) !important;
+  --sidebar-bg: #0C0E10 !important;
+  --card-bg: #14171A !important;
+  --card-hover-border: rgba(255, 255, 255, 0.18) !important;
+  --card-shadow: rgba(0, 0, 0, 0.3) !important;
+  --card-shadow-hover: rgba(0, 0, 0, 0.5) !important;
+  --input-bg: #14171A !important;
+  --input-border: rgba(255, 255, 255, 0.12) !important;
+  --btn-accent-bg: #FFDD44 !important;
+  --btn-accent-text: #111315 !important;
+  --btn-secondary-bg: #1E2226 !important;
+  --btn-secondary-border: rgba(255, 255, 255, 0.08) !important;
+  --btn-secondary-text: #FAF8F5 !important;
+}
+
+/* Viewport and Page backgrounds override to premium theme */
+body,
+.bg-\[\#111315\],
+.bg-\[\#0a0a0a\],
+[class*="bg-[#111315]"],
+[class*="bg-[#0a0a0a]"],
+.min-h-screen {
+  background-color: var(--bg-primary) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+}
+
+/* Sidebar background */
+aside, .bg-\[\#111315\] aside, [class*="bg-[#111315]"] aside {
+  background-color: var(--sidebar-bg) !important;
+  border-right: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/*
+ * Sidebar nav link default color. Scoped to the interactive elements
+ * themselves (button/a) rather than every descendant span/div — the
+ * previous version also matched nested badges and icons inside those
+ * buttons, overriding any explicitly-colored child (e.g. a status dot
+ * or accent-colored label) down to plain secondary grey. Elements
+ * that want a specific color still set their own text-[...] class,
+ * which — being more specific than this bare-tag selector — wins
+ * naturally without needing !important here.
+ */
+aside > div > button, aside > div > a {
+  color: var(--text-secondary);
+}
+
+aside button:hover, aside a:hover {
+  color: var(--text-primary) !important;
+  background-color: rgba(29, 24, 24, 0.04) !important;
+}
+
+html.dark-theme aside button:hover, html.dark-theme aside a:hover {
+  background-color: rgba(250, 248, 245, 0.04) !important;
+}
+
+aside .bg-\[\#1A1D20\], aside [class*="bg-[#1A1D20]"] {
+  background-color: var(--btn-secondary-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--btn-secondary-text) !important;
+}
+
+/* Headers */
+header {
+  background-color: var(--bg-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+/* Cards & Panels */
+.bg-\[\#1A1D20\],
+.bg-\[\#141414\],
+[class*="bg-[#1A1D20]"],
+[class*="bg-[#141414]"],
+.premium-card {
+  background-color: var(--card-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 32px !important;
+  box-shadow: 0 4px 20px var(--card-shadow) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  color: var(--text-primary) !important;
+}
+
+/*
+ * bg-[#1e1e1e] (unselected onboarding option tiles) was never mapped to
+ * the theme system at all — it stayed a hardcoded dark charcoal in
+ * light mode, with its paired text-[#a0a0a0] label (now mapped to
+ * var(--text-secondary), a dark grey in light mode) landing on top of
+ * it. Dark-grey text on a near-black tile is close to unreadable —
+ * a concrete instance of "text invisible against its background".
+ * Given a lighter touch than the full card treatment above (no 32px
+ * radius/shadow — these are small selectable tiles, not panels).
+ */
+.bg-\[\#1e1e1e\],
+[class*="bg-[#1e1e1e]"] {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/*
+ * Deliberately no ".premium-card p, span { color: ... }" rule here.
+ * The previous version forced every <p>/<span> inside any card to
+ * var(--text-secondary), including badges and status text that set
+ * their own explicit color (via a text-[...] class or inline style) —
+ * a stylesheet !important rule beats inline style, so those elements'
+ * intended colors were silently discarded. This was the single
+ * biggest source of "text invisible against its background": colored
+ * text on a colored badge background losing its color and landing on
+ * a grey that may not have enough contrast against that specific
+ * background. Removing it means elements with their own color keep
+ * it, and everything else still inherits var(--text-primary) from the
+ * card rule above, so there's no unstyled/invisible text either way.
+ */
+
+/* Tactile hover effect for Bento Tiles */
+.bg-\[\#1A1D20\]:hover,
+.bg-\[\#141414\]:hover,
+[class*="bg-[#1A1D20]"]:hover,
+[class*="bg-[#141414]"]:hover {
+  border-color: var(--card-hover-border) !important;
+  box-shadow: 0 10px 30px var(--card-shadow-hover) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Text Styling & Contrast */
+.text-\[\#B5B8BE\],
+[class*="text-[#B5B8BE]"] {
+  color: var(--text-secondary) !important;
+}
+
+/*
+ * text-[#a0a0a0] is used ~70 times across the app as a generic
+ * secondary/label color, but was never mapped to the theme system —
+ * in light mode it stayed a washed-out mid-grey on a white
+ * background (roughly 2.4:1 contrast, well under the 4.5:1 needed
+ * for normal text), which is exactly the "text invisible against its
+ * background" symptom for every label using it. Mapping it to
+ * var(--text-secondary) gives it the same theme-aware, accessible
+ * contrast as the rest of the secondary-text palette.
+ */
+.text-\[\#a0a0a0\],
+[class*="text-[#a0a0a0]"] {
+  color: var(--text-secondary) !important;
+}
+
+.text-\[\#FAF8F5\],
+[class*="text-[#FAF8F5]"],
+.text-white {
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+}
+
+h1, h2, h3, h4, h5, h6, strong, b {
+  color: var(--text-primary) !important;
+  font-family: var(--font-serif) !important;
+}
+
+/* Clean Borders */
+.border-white\/5,
+.border-white\/10,
+[class*="border-white"] {
+  border-color: var(--border-color) !important;
+}
+
+.border-\[\#262626\],
+[class*="border-[#262626]"] {
+  border-color: var(--border-color) !important;
+}
+
+/* Input Fields and Forms */
+input, select, textarea,
+.notes-textarea {
+  background-color: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.7;
+}
+
+select option {
+  background-color: var(--surface-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+input[type="range"] {
+  background-color: var(--border-color) !important;
+}
+input[type="range"].bg-\[\#1A1D20\] {
+  background-color: var(--border-color) !important;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  background-color: var(--border-color) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #FFDD44 !important;
+  box-shadow: 0 0 0 1px #FFDD44 !important;
+}
+
+/*
+ * Premium Accent Buttons (Yellow Primary Buttons). Deliberately scoped
+ * to an explicit opt-in class (.accent-btn) rather than the literal
+ * Tailwind class "bg-white" — the previous version matched ANY element
+ * with bg-white, and this codebase uses that class constantly for
+ * completely unrelated things (plain white OTP input fields, progress
+ * bar fills, static content cards, dropdown option backgrounds, a
+ * small notification badge, active-tab pill states). All of those were
+ * being force-converted into rounded yellow pills with a forced
+ * border-radius, which is exactly the "colors are inconsistent"
+ * symptom reported. Add className="accent-btn" to opt in.
+ */
+button.accent-btn,
+a.accent-btn {
+  background: #FFDD44 !important;
+  color: #111315 !important;
+  font-weight: 600 !important;
+  font-family: var(--font-serif) !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 12px rgba(255, 221, 68, 0.15) !important;
+  text-shadow: none !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+button.accent-btn:hover,
+a.accent-btn:hover {
+  background: #E5C110 !important;
+  color: #111315 !important;
+  box-shadow: 0 6px 16px rgba(229, 193, 16, 0.25) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Secondary Buttons - #FAF6CF */
+button.bg-\[\#1A1D20\],
+button[class*="bg-[#1A1D20]"] {
+  background-color: var(--btn-secondary-bg) !important;
+  border: 1px solid var(--btn-secondary-border) !important;
+  color: var(--btn-secondary-text) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+button.bg-\[\#1A1D20\]:hover,
+button[class*="bg-[#1A1D20]"]:hover {
+  background-color: #EAE2A6 !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: var(--btn-secondary-text) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Success Buttons */
+button.success-btn,
+button.bg-green-600,
+button[class*="bg-green-"],
+button.bg-green-950\/20 {
+  background-color: #38A169 !important;
+  border: 1px solid #2F855A !important;
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 12px rgba(56, 161, 105, 0.15) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+button.success-btn:hover,
+button.bg-green-600:hover,
+button[class*="bg-green-"]:hover,
+button.bg-green-950\/20:hover {
+  background-color: #2F855A !important;
+  border-color: #22543D !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 16px rgba(47, 133, 90, 0.25) !important;
+}
+
+/* Clean, modern status badges matching our warm high-contrast palette */
+.text-\[\#3E6F58\],
+.bg-\[\#3E6F58\] {
+  color: #1E4636 !important;
+}
+.bg-\[\#3E6F58\]\/10 {
+  background-color: rgba(30, 70, 54, 0.08) !important;
+  border-color: rgba(30, 70, 54, 0.12) !important;
+}
+.bg-\[\#3E6F58\] {
+  background-color: #1E4636 !important;
+  color: #FFFFFF !important;
+}
+
+.text-\[\#C97A7A\],
+.bg-\[\#C97A7A\] {
+  color: #9C2A2A !important;
+}
+.bg-\[\#C97A7A\]\/10 {
+  background-color: rgba(156, 42, 42, 0.08) !important;
+  border-color: rgba(156, 42, 42, 0.12) !important;
+}
+.bg-\[\#C97A7A\] {
+  background-color: #9C2A2A !important;
+  color: #FFFFFF !important;
+}
+
+.text-\[\#D29F6F\],
+.bg-\[\#D29F6F\] {
+  color: #B0651A !important;
+}
+.bg-\[\#D29F6F\]\/10 {
+  background-color: rgba(176, 101, 26, 0.08) !important;
+  border-color: rgba(176, 101, 26, 0.12) !important;
+}
+.bg-\[\#D29F6F\] {
+  background-color: #B0651A !important;
+  color: #FFFFFF !important;
+}
+
+/* Modern accent highlights matching new theme */
+.text-\[\#00E5FF\],
+[class*="text-[#00E5FF]"],
+.bg-\[\#00E5FF\],
+[class*="bg-[#00E5FF]"] {
+  color: #E85D04 !important;
+}
+
+.bg-\[\#00E5FF\] {
+  background-color: #E85D04 !important;
+  color: #FFFFFF !important;
+}
+
+.bg-\[\#00E5FF\]\/10,
+.bg-\[\#00E5FF\]\/5 {
+  background-color: rgba(232, 93, 4, 0.08) !important;
+  border-color: rgba(232, 93, 4, 0.12) !important;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F8F7F4;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(29, 24, 24, 0.1) !important;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 24, 24, 0.2) !important;
+}
+
+.premium-shadow {
+  box-shadow: 0 10px 40px rgba(29, 24, 24, 0.04);
+}
+
+.premium-border {
+  border-color: rgba(29, 24, 24, 0.08);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+::selection {
+  background-color: #888888 !important;
+  color: #ffffff !important;
+}
+::-moz-selection {
+  background-color: #888888 !important;
+  color: #ffffff !important;
+}
+
+.message-analyst-workspace select,
+.message-analyst-workspace select option,
+.message-analyst-workspace option {
+  background-color: #FAF6C7 !important;
+  background: #FAF6C7 !important;
+  color: #111315 !important;
+}
+
+html.dark-theme [class*="text-[#1D1818]"],
+body.dark-theme [class*="text-[#1D1818]"],
+.dark-theme [class*="text-[#1D1818]"] {
+  color: var(--text-primary) !important;
+}
+
+html.dark-theme [class*="text-[#1D1818]/"],
+body.dark-theme [class*="text-[#1D1818]/"],
+.dark-theme [class*="text-[#1D1818]/"] {
+  color: var(--text-secondary) !important;
+}
+
+html.dark-theme .bg-\[\#F8F7F4\],
+body.dark-theme .bg-\[\#F8F7F4\],
+.dark-theme .bg-\[\#F8F7F4\],
+html.dark-theme [class*="bg-[#F8F7F4]"],
+body.dark-theme [class*="bg-[#F8F7F4]"],
+.dark-theme [class*="bg-[#F8F7F4]"] {
+  background-color: var(--surface-secondary) !important;
+}
+
+html.dark-theme .bg-\[\#ffedbc\],
+body.dark-theme .bg-\[\#ffedbc\],
+.dark-theme .bg-\[\#ffedbc\],
+html.dark-theme [class*="bg-[#ffedbc]"],
+body.dark-theme [class*="bg-[#ffedbc]"],
+.dark-theme [class*="bg-[#ffedbc]"] {
+  background-color: var(--surface-secondary) !important;
+}
+
+html.dark-theme .bg-\[\#FAF6CF\],
+body.dark-theme .bg-\[\#FAF6CF\],
+.dark-theme .bg-\[\#FAF6CF\],
+html.dark-theme [class*="bg-[#FAF6CF]"],
+body.dark-theme [class*="bg-[#FAF6CF]"],
+.dark-theme [class*="bg-[#FAF6CF]"] {
+  background-color: var(--border-color) !important;
+}
+
+html.dark-theme [class*="border-[#1D1818]"],
+body.dark-theme [class*="border-[#1D1818]"],
+.dark-theme [class*="border-[#1D1818]"] {
+  border-color: var(--border-color) !important;
+}
+
+html.dark-theme [class*="bg-[#1D1818]/5"],
+body.dark-theme [class*="bg-[#1D1818]/5"],
+.dark-theme [class*="bg-[#1D1818]/5"] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/*
+ * Elements marked data-theme-locked="light" (currently: the sign-in/
+ * sign-up modal) are designed to always render as a warm, light card
+ * regardless of the app-wide theme toggle — a deliberate, fixed brand
+ * surface, not a themed one. The generic input/select/textarea and
+ * text-[#1D1818] dark-theme rules above are attribute/class selectors
+ * that unintentionally also matched this modal's own bg-white +
+ * text-[#1D1818] inputs, flipping them to dark-theme colors and
+ * leaving near-black input boxes sitting inside an otherwise-light
+ * modal card. These carve-outs have higher specificity (an attribute
+ * selector plus a descendant), so they win regardless of source order
+ * and restore the modal's fixed light appearance in dark theme.
+ */
+[data-theme-locked="light"] input,
+[data-theme-locked="light"] select,
+[data-theme-locked="light"] textarea {
+  background-color: #FFFFFF !important;
+  color: #1D1818 !important;
+  border-color: #E5E5E0 !important;
+}
+
+html.dark-theme [data-theme-locked="light"] [class*="text-[#1D1818]"],
+body.dark-theme [data-theme-locked="light"] [class*="text-[#1D1818]"],
+.dark-theme [data-theme-locked="light"] [class*="text-[#1D1818]"] {
+  color: #1D1818 !important;
+}
