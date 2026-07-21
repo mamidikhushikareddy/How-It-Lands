@@ -246,19 +246,6 @@ npm run build && npm start
 
 ---
 
-# 🔔 Notifications
-
-How It Lands currently supports:
-
-- Analysis Reports
-- Diagnostics Summaries
-- Security Alerts
-- Monthly Conversation Reports
-
-Notification preferences can be managed within Profile Settings.
-
----
-
 # ☁️ Deployment
 
 The project includes a ready-to-use **Render Blueprint** (`render.yaml`) for one-click deployment.
