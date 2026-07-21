@@ -1,0 +1,119 @@
+## Render Blueprint
+##
+## This file lets Render provision the web service and a managed Postgres
+## database together, with the connection string wired automatically —
+## no manual copy-pasting of DATABASE_URL required. To use it: push this
+## repo to GitHub/GitLab, then in the Render dashboard choose
+## "New +" -> "Blueprint" and point it at the repo. Render reads this
+## file and sets everything up.
+##
+## You can also skip this entirely and create the web service manually
+## in the dashboard — see README.md for the equivalent manual settings
+## (build command, start command, health check path, env vars).
+
+## Shared secret between the web service and the cron job below — a
+## Blueprint env var group generates the value once and both resources
+## reference the same one, so the cron job's request is actually
+## authorized against what the web service checks.
+envVarGroups:
+  - name: how-it-lands-shared
+    envVars:
+      - key: INTERNAL_CRON_SECRET
+        generateValue: true
+
+databases:
+  - name: how-it-lands-db
+    plan: free
+    postgresMajorVersion: 16
+
+services:
+  - type: web
+    name: how-it-lands
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    envVarGroups:
+      - how-it-lands-shared
+    # --include=dev is load-bearing here, not optional: NODE_ENV=production
+    # is set below for the *runtime*, but Render exposes the same env vars
+    # during the build step too. Without this flag, npm's default behavior
+    # is to skip devDependencies whenever NODE_ENV=production is set — and
+    # vite, esbuild, and typescript (all required just to build the app)
+    # live in devDependencies. Omitting this flag would make the build
+    # fail with "vite: not found" the moment NODE_ENV is set.
+    buildCommand: npm install --include=dev && npm run build && npm run migrate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # Wired automatically from the database resource above — Render
+      # fills this in with the real pooled connection string.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: how-it-lands-db
+          property: connectionString
+
+      # Generated automatically by Render at first deploy — unique per
+      # deployment, never reused, nothing for you to fill in.
+      - key: SIGNING_SECRET
+        generateValue: true
+      - key: WEBHOOK_SECRET
+        generateValue: true
+
+      # Render sets NODE_ENV=production for web services by default, but
+      # declaring it explicitly here removes any doubt.
+      - key: NODE_ENV
+        value: production
+
+      # These require real values you provide — sync: false means Render
+      # will prompt you to fill them in via the dashboard rather than
+      # committing them to this file (never put real secrets in a file
+      # that goes in git).
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+
+  # Triggers the "Monthly Conversation alignment reports" notification —
+  # runs once a month and just makes one authenticated POST request to
+  # the web service; the web service does the actual work (querying
+  # eligible users, computing stats, sending emails). Deliberately not
+  # doing the report generation *in* the cron job itself — that would
+  # mean this job needs its own DB pool, its own copy of the email
+  # templates, etc. A single source of truth in the web service is
+  # simpler and means there's only one place that logic can drift.
+  - type: cron
+    name: how-it-lands-monthly-reports
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    # 09:00 UTC on the 1st of every month.
+    schedule: "0 9 1 * *"
+    buildCommand: "true"
+    startCommand: >-
+      curl -sf -X POST
+      -H "x-cron-secret: $INTERNAL_CRON_SECRET"
+      "$APP_URL/api/internal/notifications/monthly-report"
+    envVarGroups:
+      - how-it-lands-shared
+    envVars:
+      # Must match the APP_URL you set on the web service above — this
+      # is what the cron job curls.
+      - key: APP_URL
+        sync: false
+

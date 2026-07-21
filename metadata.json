@@ -1,0 +1,6 @@
+{
+  "name": "How It Lands",
+  "description": "Before you send it, know how it lands. AI communication strategist for difficult conversations.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
