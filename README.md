@@ -4,110 +4,89 @@
 
 ### *Think Before You Send.*
 
-AI-powered communication coaching that helps you understand **how your message will land before anyone reads it.**
+**How It Lands** is an AI-powered communication coach that helps you understand **how your message will be perceived before you hit send.** Analyze conversations, receive strategic rewrites, simulate possible replies, and improve your communication with real-time AI coaching.
 
-Analyze • Rewrite • Rehearse • Improve
+<p>
+  <img src="https://img.shields.io/badge/Version-v0.1-blue?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+</p>
 
-<br>
+**Current Version:** **v0.1**
 
-![Version](https://img.shields.io/badge/Version-v0.1-2563eb?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Stable-success?style=for-the-badge)
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)
-![Gemini](https://img.shields.io/badge/Google-Gemini-4285F4?style=for-the-badge)
+*The first public release focused on validating the core communication intelligence engine.*
 
 ---
 
-### 🚀 Current Release: **Version 0.1**
-
-*A stable MVP focused on validating the core AI-powered communication intelligence platform.*
+### 🧠 Communicate with confidence, not uncertainty.
 
 </div>
 
 ---
 
-# 📖 About
+# ✨ Features
 
-**How It Lands** is an AI-powered communication intelligence platform that helps users evaluate, improve, and rehearse messages **before they are sent.**
+### 📝 AI Message Analysis
+Analyze how your message is likely to be perceived across multiple communication dimensions.
 
-Instead of wondering
-
-> *"Did I say that the right way?"*
-
-How It Lands provides strategic feedback, rewrite suggestions, conversation simulations, and AI coaching to help users communicate with greater clarity, confidence, and empathy.
-
-Whether you're
-
-- 💼 Negotiating with a client
-- 🎓 Emailing a professor
-- 👨‍💼 Giving workplace feedback
-- ❤️ Sending an important personal message
-- 🤝 Handling difficult conversations
-
-How It Lands helps you understand **how your words are likely to be received—not just what they say.**
-
----
-
-# ✨ Core Features
-
-### 🧠 AI Message Analysis
-
-Analyze messages across multiple communication dimensions including tone, clarity, empathy, confidence, professionalism, emotional impact, and intent.
-
----
-
-### ✍ AI Rewrite Suggestions
-
-Receive AI-powered rewrites tailored for different communication styles and goals.
-
----
+### ✨ AI Rewrite Suggestions
+Receive context-aware rewrites that improve tone, clarity, empathy and intent.
 
 ### 💬 Conversation Path Simulator
+Preview possible conversation outcomes before sending a message.
 
-Preview how a conversation may evolve before sending your message.
-
----
-
-### 🎯 AI Communication Coach
-
-Interact with a real-time AI coach for personalized communication guidance and improvement.
-
----
+### 🎯 Communication Coach
+Chat with an AI coach for personalized communication guidance.
 
 ### 📊 Diagnostics Dashboard
+Track communication patterns and insights over time.
 
-Track communication quality, saved analyses, trends, and conversation insights.
+### 📧 Smart Email Reports
+Receive AI-generated analysis reports directly in your inbox.
 
----
+### 🔒 Secure Authentication
+Email authentication, Google Sign-In, password reset and security notifications.
 
-### 📧 Smart Email Notifications
-
-Receive
-
-- Analysis reports
-- Security alerts
-- Monthly communication summaries
+### ⚡ Offline AI Fallback
+Gracefully falls back when AI services are unavailable.
 
 ---
 
-### 🔐 Secure Authentication
+# 🚀 Why How It Lands?
 
-- Email Authentication
-- Google Sign-In
-- Password Reset
-- Security Notifications
+Most messaging apps help you **send messages**.
+
+**How It Lands helps you understand how they'll be received.**
+
+Whether you're:
+
+- Negotiating
+- Giving feedback
+- Handling conflict
+- Communicating with colleagues
+- Texting someone important
+
+The goal is simple:
+
+> **Reduce misunderstandings before they happen.**
 
 ---
 
-### ⚡ Graceful Offline Mode
+# 🛠 Tech Stack
 
-The application continues functioning even when AI services are unavailable.
+| Layer | Technologies |
+|--------|--------------|
+| Frontend | React, TypeScript, Tailwind CSS |
+| Backend | Node.js, Express |
+| Database | PostgreSQL |
+| AI | Google Gemini |
+| Authentication | Google OAuth + Email Authentication |
+| Deployment | Render |
+| Build Tools | Vite, ESBuild |
 
 ---
 
-# 🏗️ System Architecture
+# 🏗 Architecture
 
 ```text
                 User
@@ -116,50 +95,32 @@ The application continues functioning even when AI services are unavailable.
 
                   ▼
 
-      React + TypeScript Frontend
+        React + TypeScript UI
 
                   │
 
                   ▼
 
-          Express Backend API
+          Express API Server
 
-        ┌─────────┴─────────┐
+         ┌────────┴────────┐
 
-        ▼                   ▼
+         ▼                 ▼
 
-   Google Gemini       PostgreSQL
+   Gemini AI         PostgreSQL
 
-        │                   │
+         │                 │
 
-        └─────────┬─────────┘
-
-                  ▼
-
-      AI Analysis & Coaching Engine
-
-                  │
+         └────────┬────────┘
 
                   ▼
 
-        Reports • Notifications
+       Analysis • Coaching
 
-      Conversation Simulations
+    Conversation Simulation
+
+      Notifications & Reports
 ```
-
----
-
-# 🛠️ Tech Stack
-
-| Category | Technologies |
-|-----------|--------------|
-| Frontend | React, TypeScript, Tailwind CSS |
-| Backend | Node.js, Express |
-| Database | PostgreSQL |
-| AI | Google Gemini |
-| Authentication | Google OAuth, Email Authentication |
-| Deployment | Render |
-| Build Tools | Vite, ESBuild |
 
 ---
 
@@ -168,23 +129,19 @@ The application continues functioning even when AI services are unavailable.
 ```text
 .
 
-├── client/
-│   ├── components
-│   ├── pages
-│   └── hooks
-│
-├── server/
-│   ├── api
-│   ├── services
-│   └── routes
-│
-├── shared/
-│
-├── migrations/
-│
-├── public/
-│
-└── docs/
+├── client/          Frontend
+
+├── server/          Backend APIs
+
+├── shared/          Shared schemas
+
+├── migrations/      Database migrations
+
+├── public/          Static assets
+
+├── docs/            Documentation
+
+└── dist/            Production build
 ```
 
 ---
@@ -193,7 +150,7 @@ The application continues functioning even when AI services are unavailable.
 
 - Node.js **20+**
 - PostgreSQL
-- Gemini API Key *(Optional but recommended)*
+- Gemini API Key *(optional but recommended)*
 
 ---
 
@@ -209,11 +166,13 @@ npm install
 
 ## 2. Configure Environment Variables
 
+Create a local environment file.
+
 ```bash
 cp .env.example .env
 ```
 
-Configure at minimum:
+Fill in the required variables:
 
 ```env
 DATABASE_URL=
@@ -221,21 +180,15 @@ DATABASE_URL=
 SIGNING_SECRET=
 
 WEBHOOK_SECRET=
+
+GEMINI_API_KEY=
 ```
 
-Generate secrets:
+Generate secure secrets:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
-
-For AI features:
-
-```env
-GEMINI_API_KEY=
-```
-
-See `.env.example` for additional configuration.
 
 ---
 
@@ -267,6 +220,7 @@ Always rebuild before starting.
 
 ```bash
 npm run build
+
 npm start
 ```
 
@@ -282,128 +236,99 @@ npm run build && npm start
 
 | Command | Description |
 |----------|-------------|
-| `npm install` | Install dependencies |
-| `npm run dev` | Start development server |
-| `npm run build` | Build production bundle |
-| `npm start` | Run production build |
-| `npm run migrate` | Apply database migrations |
-| `npm run lint` | Type checking |
-| `npm run clean` | Remove build artifacts |
+| npm install | Install dependencies |
+| npm run dev | Development server |
+| npm run build | Production build |
+| npm start | Start production server |
+| npm run migrate | Run database migrations |
+| npm run lint | Type checking |
+| npm run clean | Remove build artifacts |
 
 ---
 
 # 🔔 Notifications
 
-The platform currently supports
+How It Lands currently supports:
 
-- 📧 Analysis Reports
-- 🔐 Security Alerts
-- 📈 Monthly Communication Reports
+- Analysis Reports
+- Diagnostics Summaries
+- Security Alerts
+- Monthly Conversation Reports
 
-Notification preferences are configurable within **Profile Settings**.
+Notification preferences can be managed within Profile Settings.
 
 ---
 
 # ☁️ Deployment
 
-This repository includes a **Render Blueprint (`render.yaml`)** for one-click deployment.
+The project includes a ready-to-use **Render Blueprint** (`render.yaml`) for one-click deployment.
 
-Deployment automatically provisions
+Deployment automatically provisions:
 
 - PostgreSQL Database
-- Render Web Service
+- Web Service
 - Environment Variables
 - Database Migrations
 - Health Checks
 
 ---
 
+# ❤️ Current Version
+
+## Version **0.1**
+
+This release focuses on validating the core product experience.
+
+### Included
+
+- ✅ AI Message Analysis
+- ✅ AI Rewrite Suggestions
+- ✅ Communication Coach
+- ✅ Conversation Path Simulator
+- ✅ Authentication
+- ✅ Email Notifications
+- ✅ Diagnostics Dashboard
+- ✅ Render Deployment
+- ✅ Secure Account Management
+- ✅ Multi-language support
+
+---
+
 # 🚀 Roadmap
 
-## ✅ Version 0.1 (Current)
+## Version 0.2
 
-- AI Message Analysis
-- AI Rewrite Suggestions
-- Conversation Path Simulator
-- AI Communication Coach
-- Diagnostics Dashboard
-- Authentication & Security
-- Email Reports
-- Render Deployment
+- 🎥 Multimedia Conversation Rehearsal (Images, Voice & Attachments)
+- 🔔 Fully Configurable Notification Trigger Settings
+- 📊 Expanded Analytics Dashboard
+- 🧠 Improved Conversation Intelligence
+- ⚡ Faster AI Response Pipeline
 
 ---
 
-## 🚧 Version 0.2
+## Version 0.3
 
-- 🎥 Multimedia Conversation Rehearsal
-  - Images
-  - Voice Messages
-  - Attachments
-  - Screenshots
+- 🤝 Shared Conversation Workspaces
+- 👥 Team Collaboration
+- 📱 Mobile Responsive Experience
+- 🧩 Browser Extension
 
-- 🔔 Fully implemented Notification Trigger Settings
-
-- 📊 Enhanced communication analytics
-
-- ⚡ Faster AI reasoning
-
-- 🧠 Improved conversation intelligence
-
+- ✨ Many more advanced features currently under development
 ---
 
-## 🚀 Future Versions
+## Future Vision
 
-The platform will continue evolving with advanced capabilities including
-
-- Personalized AI communication profiles
-- Multi-language communication analysis
-- Browser Extension
-- Mobile Application
-- Shared Workspaces
-- Team Collaboration
-- Calendar Integration
-- Meeting Preparation Assistant
-- Email Draft Coaching
-- Organization-wide Communication Analytics
-- Rich conversation history intelligence
-- Advanced emotional intelligence analysis
-- Smarter AI reasoning
-- Many more product enhancements currently under development
-
----
-
-# 🎯 Project Vision
-
-How It Lands aims to become an **AI Communication Intelligence Platform** that enables people to communicate with greater clarity, empathy, confidence, and strategic intent across personal, academic, and professional conversations.
-
----
-
-# ❤️ Built With
-
-- React
-- TypeScript
-- Node.js
-- Express
-- PostgreSQL
-- Google Gemini
-- Tailwind CSS
-- Render
-
----
-
-# 📄 License
-
-This project is released under the **MIT License**.
+The long-term vision for **How It Lands** is to evolve into an intelligent communication platform capable of helping users prepare for any high-stakes conversation through advanced AI guidance, predictive conversation modelling, multimedia rehearsal, personalized communication insights, and many more upcoming features.
 
 ---
 
 <div align="center">
 
-## 💙 How It Lands
+### 💬 **How It Lands**
 
-### *Helping conversations land better—before they're ever sent.*
+*Helping conversations land better—before they're ever sent.*
 
-**Version 0.1**
+**Current Release:** **v0.1**
 
 ⭐ If you found this project interesting, consider giving it a star!
 
