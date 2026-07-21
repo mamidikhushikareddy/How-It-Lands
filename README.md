@@ -290,6 +290,7 @@ This release focuses on validating the core product experience.
 - 📊 Expanded Analytics Dashboard
 - 🧠 Improved Conversation Intelligence
 - ⚡ Faster AI Response Pipeline
+- 📱 Improved UI/UX
 
 ---
 
