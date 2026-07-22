@@ -10,8 +10,13 @@
   <img src="https://img.shields.io/badge/Version-v0.1-blue?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+
   <a href="https://app.notion.com/p/PRD-How-It-Lands-3a45e82851bf801db597f082c1ec319e?source=copy_link">
     <img src="https://img.shields.io/badge/Product%20Requirements-View%20PRD-8A2BE2?style=for-the-badge" />
+  </a>
+
+  <a href="docs/How%20It%20Lands-%20Research.xlsx">
+    <img src="https://img.shields.io/badge/Product%20Research-Excel%20Workbook-2E8B57?style=for-the-badge" />
   </a>
 </p>
 
