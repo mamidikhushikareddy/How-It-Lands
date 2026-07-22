@@ -10,30 +10,20 @@
   <img src="https://img.shields.io/badge/Version-v0.1-blue?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" />
+  <a href="https://app.notion.com/p/PRD-How-It-Lands-3a45e82851bf801db597f082c1ec319e?source=copy_link">
+    <img src="https://img.shields.io/badge/Product%20Requirements-View%20PRD-8A2BE2?style=for-the-badge" />
+  </a>
 </p>
 
 **Current Version:** **v0.1**
 
 *The first public release focused on validating the core communication intelligence engine.*
 
----
-
 ### 🧠 Communicate with confidence, not uncertainty.
 
 </div>
 
 ---
-## 📄 Product Requirements Document
-
-<div align="center">
-
-**Curious about the thinking behind the product?**
-
-Explore the complete **Product Requirements Document (PRD)** covering the vision, research, user flows, feature specifications, roadmap, and success metrics.
-
-### 👉 https://app.notion.com/p/PRD-How-It-Lands-3a45e82851bf801db597f082c1ec319e?source=copy_link
-
-</div>
 
 # ✨ Features
 
@@ -41,7 +31,7 @@ Explore the complete **Product Requirements Document (PRD)** covering the vision
 Analyze how your message is likely to be perceived across multiple communication dimensions.
 
 ### ✨ AI Rewrite Suggestions
-Receive context-aware rewrites that improve tone, clarity, empathy and intent.
+Receive context-aware rewrites that improve tone, clarity, empathy, and intent.
 
 ### 💬 Conversation Path Simulator
 Preview possible conversation outcomes before sending a message.
@@ -56,7 +46,7 @@ Track communication patterns and insights over time.
 Receive AI-generated analysis reports directly in your inbox.
 
 ### 🔒 Secure Authentication
-Email authentication, Google Sign-In, password reset and security notifications.
+Email authentication, Google Sign-In, password reset, and security notifications.
 
 ### ⚡ Offline AI Fallback
 Gracefully falls back when AI services are unavailable.
@@ -65,7 +55,7 @@ Gracefully falls back when AI services are unavailable.
 
 # 🚀 Why How It Lands?
 
-Most messaging apps help you **send messages**.
+Most messaging apps help you **send messages.**
 
 **How It Lands helps you understand how they'll be received.**
 
@@ -83,17 +73,31 @@ The goal is simple:
 
 ---
 
+# 📄 Product Requirements Document
+
+Product thinking is at the heart of **How It Lands**.
+
+Explore the complete **Product Requirements Document (PRD)** to understand the product vision, research, user journeys, feature specifications, roadmap, and success metrics behind the project.
+
+<div align="center">
+
+### 👉 **[View the Complete PRD on Notion](https://app.notion.com/p/PRD-How-It-Lands-3a45e82851bf801db597f082c1ec319e?source=copy_link)**
+
+</div>
+
+---
+
 # 🛠 Tech Stack
 
 | Layer | Technologies |
 |--------|--------------|
-| Frontend | React, TypeScript, Tailwind CSS |
-| Backend | Node.js, Express |
-| Database | PostgreSQL |
-| AI | Google Gemini |
-| Authentication | Google OAuth + Email Authentication |
-| Deployment | Render |
-| Build Tools | Vite, ESBuild |
+| **Frontend** | React, TypeScript, Tailwind CSS |
+| **Backend** | Node.js, Express |
+| **Database** | PostgreSQL |
+| **AI** | Google Gemini |
+| **Authentication** | Google OAuth + Email Authentication |
+| **Deployment** | Render |
+| **Build Tools** | Vite, ESBuild |
 
 ---
 
@@ -101,36 +105,21 @@ The goal is simple:
 
 ```text
                 User
-
                   │
-
                   ▼
-
         React + TypeScript UI
-
                   │
-
                   ▼
-
           Express API Server
-
          ┌────────┴────────┐
-
          ▼                 ▼
-
-   Gemini AI         PostgreSQL
-
+    Gemini AI        PostgreSQL
          │                 │
-
          └────────┬────────┘
-
                   ▼
-
-       Analysis • Coaching
-
-    Conversation Simulation
-
-      Notifications & Reports
+      Analysis • Coaching
+   Conversation Simulation
+   Notifications & Reports
 ```
 
 ---
@@ -139,19 +128,12 @@ The goal is simple:
 
 ```text
 .
-
 ├── client/          Frontend
-
 ├── server/          Backend APIs
-
 ├── shared/          Shared schemas
-
 ├── migrations/      Database migrations
-
 ├── public/          Static assets
-
 ├── docs/            Documentation
-
 └── dist/            Production build
 ```
 
@@ -167,7 +149,7 @@ The goal is simple:
 
 # 🚀 Getting Started
 
-## 1. Install Dependencies
+## 1️⃣ Install Dependencies
 
 ```bash
 npm install
@@ -175,7 +157,7 @@ npm install
 
 ---
 
-## 2. Configure Environment Variables
+## 2️⃣ Configure Environment Variables
 
 Create a local environment file.
 
@@ -203,7 +185,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ---
 
-## 3. Run Database Migrations
+## 3️⃣ Run Database Migrations
 
 ```bash
 npm run migrate
@@ -213,13 +195,15 @@ npm run migrate
 
 # 💻 Development
 
+Run the development server:
+
 ```bash
 npm run dev
 ```
 
-Runs locally at
+Application runs locally at:
 
-```
+```text
 http://localhost:3000
 ```
 
@@ -227,11 +211,10 @@ http://localhost:3000
 
 # 🚀 Production
 
-Always rebuild before starting.
+Build and start the production server.
 
 ```bash
 npm run build
-
 npm start
 ```
 
@@ -247,13 +230,13 @@ npm run build && npm start
 
 | Command | Description |
 |----------|-------------|
-| npm install | Install dependencies |
-| npm run dev | Development server |
-| npm run build | Production build |
-| npm start | Start production server |
-| npm run migrate | Run database migrations |
-| npm run lint | Type checking |
-| npm run clean | Remove build artifacts |
+| `npm install` | Install dependencies |
+| `npm run dev` | Start development server |
+| `npm run build` | Create production build |
+| `npm start` | Start production server |
+| `npm run migrate` | Run database migrations |
+| `npm run lint` | Run type checking |
+| `npm run clean` | Remove build artifacts |
 
 ---
 
@@ -271,24 +254,24 @@ Deployment automatically provisions:
 
 ---
 
-# ❤️ Current Version
+# ❤️ Release Notes
 
 ## Version **0.1**
 
-This release focuses on validating the core product experience.
+The first public release focused on validating the core communication intelligence engine.
 
 ### Included
 
 - ✅ AI Message Analysis
 - ✅ AI Rewrite Suggestions
-- ✅ Communication Coach
 - ✅ Conversation Path Simulator
-- ✅ Authentication
-- ✅ Email Notifications
+- ✅ AI Communication Coach
 - ✅ Diagnostics Dashboard
-- ✅ Render Deployment
+- ✅ Email Reports
+- ✅ Authentication
 - ✅ Secure Account Management
-- ✅ Multi-language support
+- ✅ Multi-language Support
+- ✅ Render Deployment
 
 ---
 
@@ -297,11 +280,11 @@ This release focuses on validating the core product experience.
 ## Version 0.2
 
 - 🎥 Multimedia Conversation Rehearsal (Images, Voice & Attachments)
-- 🔔 Fully Configurable Notification Trigger Settings
+- 🔔 Configurable Notification Trigger Settings
 - 📊 Expanded Analytics Dashboard
 - 🧠 Improved Conversation Intelligence
 - ⚡ Faster AI Response Pipeline
-- 📱 Improved UI/UX
+- 📱 Enhanced UI/UX
 
 ---
 
@@ -309,26 +292,40 @@ This release focuses on validating the core product experience.
 
 - 🤝 Shared Conversation Workspaces
 - 👥 Team Collaboration
-- 📱 Mobile Responsive Experience
+- 📱 Fully Responsive Mobile Experience
 - 🧩 Browser Extension
+- ✨ Many more advanced AI-powered features
 
-- ✨ Many more advanced features currently under development
 ---
 
-## Future Vision
+# 🌟 Future Vision
 
-The long-term vision for **How It Lands** is to evolve into an intelligent communication platform capable of helping users prepare for any high-stakes conversation through advanced AI guidance, predictive conversation modelling, multimedia rehearsal, personalized communication insights, and many more upcoming features.
+The long-term vision for **How It Lands** is to become an intelligent communication platform that helps people prepare for every important conversation.
+
+Future capabilities include:
+
+- Predictive conversation modeling
+- Personalized communication coaching
+- Multimedia conversation rehearsal
+- AI-powered behavioral insights
+- Relationship-aware recommendations
+- Enterprise collaboration
+- Advanced communication analytics
+
+The goal is simple:
+
+> **Help every message land the way it was intended.**
 
 ---
 
 <div align="center">
 
-### 💬 **How It Lands**
+## 💬 How It Lands
 
-*Helping conversations land better—before they're ever sent.*
+### *Helping conversations land better—before they're ever sent.*
 
 **Current Release:** **v0.1**
 
-⭐ If you found this project interesting, consider giving it a star!
+⭐ **If you found this project interesting, consider giving it a star!**
 
 </div>
