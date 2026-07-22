@@ -23,6 +23,17 @@
 </div>
 
 ---
+## 📄 Product Requirements Document
+
+<div align="center">
+
+**Curious about the thinking behind the product?**
+
+Explore the complete **Product Requirements Document (PRD)** covering the vision, research, user flows, feature specifications, roadmap, and success metrics.
+
+### 👉 https://app.notion.com/p/PRD-How-It-Lands-3a45e82851bf801db597f082c1ec319e?source=copy_link
+
+</div>
 
 # ✨ Features
 
