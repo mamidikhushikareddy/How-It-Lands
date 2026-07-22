@@ -15,8 +15,12 @@
     <img src="https://img.shields.io/badge/Product%20Requirements-View%20PRD-8A2BE2?style=for-the-badge" />
   </a>
 
+  <a href="https://app.notion.com/p/PRIMARY-USER-RESEARCH-PRODUCT-VALIDATION-3a55e82851bf8016833bf152b0e39c0e?source=copy_link">
+    <img src="https://img.shields.io/badge/User%20Research-View%20Research-2E8B57?style=for-the-badge" />
+  </a>
+
   <a href="docs/How%20It%20Lands-%20Research.xlsx">
-    <img src="https://img.shields.io/badge/Product%20Research-Excel%20Workbook-2E8B57?style=for-the-badge" />
+    <img src="https://img.shields.io/badge/Research%20Workbook-Excel-228B22?style=for-the-badge" />
   </a>
 </p>
 
