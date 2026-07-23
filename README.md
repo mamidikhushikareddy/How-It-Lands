@@ -22,9 +22,9 @@
   <a href="docs/How%20It%20Lands-%20Research.xlsx">
     <img src="https://img.shields.io/badge/Research%20Workbook-Excel-228B22?style=for-the-badge" />
   </a>
-   <a href="https://app.notion.com/p/Competitor-Analysis-using-Similarweb-3a65e82851bf80a5b82df86c070af5c2?source=copy_link">
-    <img src="https://img.shields.io/badge/Competitor%20Analysis-View%20Analysis-2E8B57?style=for-the-badge" />
-  </a>
+  <a href="https://app.notion.com/p/Competitor-Analysis-using-Similarweb-3a65e82851bf80a5b82df86c070af5c2?source=copy_link">
+  <img src="https://img.shields.io/badge/Competitor%20Analysis%20(Similarweb)-View%20Report-2E8B57?style=for-the-badge" />
+</a>
 </p>
 
 **Current Version:** **v0.1**
