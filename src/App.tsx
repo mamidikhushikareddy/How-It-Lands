@@ -592,7 +592,14 @@ export default function App() {
           />
         );
       }
-      return <Onboarding user={user} onComplete={handleOnboardingComplete} />;
+      return (
+        <Onboarding 
+          user={user} 
+          onComplete={handleOnboardingComplete} 
+          theme={theme}
+          onToggleTheme={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+        />
+      );
     }
 
     // Secondary marketing templates or generic content
