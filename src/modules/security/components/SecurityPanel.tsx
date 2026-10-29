@@ -13,7 +13,9 @@ import { User, UserProfile } from '../../../types';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { notify } from '../../../components/ui/Toast';
 import { authApi } from '../../auth/auth.api';
+import { authFetch } from '../../../lib/authStorage';
 
 interface SecurityPanelProps {
   user: User;
@@ -129,12 +131,21 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
   const fetchSecurityMetrics = async () => {
     try {
       setLoadingLogs(true);
-      const res = await fetch('/api/security/metrics');
+      const res = await authFetch('/api/security/metrics');
+      if (!res.ok) {
+        console.warn(`Security metrics returned status ${res.status}`);
+        return;
+      }
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        console.warn('Security metrics response was not JSON');
+        return;
+      }
       const data = await res.json();
-      setIsPgActive(data.postgresActive);
-      setAuditLogs(data.auditLogs || []);
+      setIsPgActive(Boolean(data.postgresActive));
+      setAuditLogs(Array.isArray(data.auditLogs) ? data.auditLogs : []);
     } catch (err) {
-      console.error('Failed to load security metrics:', err);
+      console.warn('Notice: Could not load security metrics:', err);
     } finally {
       setLoadingLogs(false);
     }
@@ -148,7 +159,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
     setUpdatingProfile(true);
 
     try {
-      const res = await fetch('/api/user/update', {
+      const res = await authFetch('/api/user/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email })
@@ -249,7 +260,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
     };
 
     try {
-      const res = await fetch('/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: updatedProfile })
@@ -294,7 +305,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
     };
 
     try {
-      const res = await fetch('/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: updatedProfile })
@@ -317,7 +328,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
   const handleUpgradeLocal = async (plan: 'free' | 'pro' | 'plus') => {
     setUpgradingPlan(plan);
     try {
-      const res = await fetch('/api/billing/upgrade', {
+      const res = await authFetch('/api/billing/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan })
@@ -325,13 +336,13 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
       const data = await res.json();
       if (data.success) {
         onUpdateUser(data.user);
-        alert(`Successfully changed subscription plan to ${plan.toUpperCase()}!`);
+        notify(`Successfully changed subscription plan to ${plan.toUpperCase()}!`, 'success');
       } else {
-        alert(data.error || 'Upgrade failed.');
+        notify(data.error || 'Upgrade failed.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Subscription upgrade failed. Please try again.');
+      notify('Subscription upgrade failed. Please try again.', 'error');
     } finally {
       setUpgradingPlan(null);
     }
@@ -376,7 +387,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
     setMfaError('');
     setMfaSuccess('');
     try {
-      const res = await fetch('/api/auth/2fa/setup', { method: 'POST' });
+      const res = await authFetch('/api/auth/2fa/setup', { method: 'POST' });
       const data = await res.json();
       if (data.error) {
         setMfaError(data.error);
@@ -395,7 +406,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
     e.preventDefault();
     setMfaError('');
     try {
-      const res = await fetch('/api/auth/2fa/verify', {
+      const res = await authFetch('/api/auth/2fa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ secret: mfaSecret, code: verificationCode })
@@ -428,7 +439,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
     setMfaError('');
     setMfaSuccess('');
     try {
-      const res = await fetch('/api/auth/2fa/disable', { method: 'POST' });
+      const res = await authFetch('/api/auth/2fa/disable', { method: 'POST' });
       const data = await res.json();
       if (data.error) {
         setMfaError(data.error);
@@ -450,28 +461,28 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
   return (
     <div className="space-y-8 max-w-5xl mx-auto font-sans pb-16 animate-fade-in">
       {/* Header and overview */}
-      <div className="border-b border-white/5 pb-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="border-b border-slate-200 dark:border-slate-700 pb-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
           <span className="text-[10px] uppercase font-mono tracking-widest text-[#00E5FF] font-bold">Account Center</span>
-          <h1 className="text-2xl font-light font-display text-[#FAF8F5]">Settings & Workspace Configuration</h1>
-          <p className="text-xs text-[#B5B8BE]">Configure personal info, tweak custom communication parameters, adjust active tiers, and audit zero-trust logs.</p>
+          <h1 className="text-2xl font-light font-display text-slate-900 dark:text-slate-100">Settings & Workspace Configuration</h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400">Configure personal info, tweak custom communication parameters, adjust active tiers, and audit zero-trust logs.</p>
         </div>
         
         {/* Short info badge */}
-        <div className="flex items-center gap-2 bg-[#111315] border border-white/5 px-3 py-1.5 rounded-xl self-start md:self-auto">
+        <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#10141C] border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl self-start md:self-auto">
           <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-          <span className="text-[10px] font-mono text-[#FAF8F5]">Tenant ID: <span className="opacity-60">{user.id}</span></span>
+          <span className="text-[10px] font-mono text-slate-900 dark:text-slate-100">Tenant ID: <span className="opacity-60">{user.id}</span></span>
         </div>
       </div>
 
       {/* Tabs navigation panel */}
-      <div className="flex border-b border-white/5 overflow-x-auto pb-px">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto pb-px">
         <button
           onClick={() => setActiveTab('profile')}
           className={`flex items-center gap-2 px-5 py-3 text-xs border-b-2 font-medium transition whitespace-nowrap cursor-pointer ${
             activeTab === 'profile'
               ? 'border-[#00E5FF] text-[#00E5FF]'
-              : 'border-transparent text-[#B5B8BE] hover:text-[#FAF8F5]'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
           }`}
         >
           <UserIcon className="w-3.5 h-3.5" />
@@ -483,7 +494,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
           className={`flex items-center gap-2 px-5 py-3 text-xs border-b-2 font-medium transition whitespace-nowrap cursor-pointer ${
             activeTab === 'preferences'
               ? 'border-[#00E5FF] text-[#00E5FF]'
-              : 'border-transparent text-[#B5B8BE] hover:text-[#FAF8F5]'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -495,7 +506,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
           className={`flex items-center gap-2 px-5 py-3 text-xs border-b-2 font-medium transition whitespace-nowrap cursor-pointer ${
             activeTab === 'subscription'
               ? 'border-[#00E5FF] text-[#00E5FF]'
-              : 'border-transparent text-[#B5B8BE] hover:text-[#FAF8F5]'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
           }`}
         >
           <CreditCard className="w-3.5 h-3.5" />
@@ -507,7 +518,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
           className={`flex items-center gap-2 px-5 py-3 text-xs border-b-2 font-medium transition whitespace-nowrap cursor-pointer ${
             activeTab === 'security'
               ? 'border-[#00E5FF] text-[#00E5FF]'
-              : 'border-transparent text-[#B5B8BE] hover:text-[#FAF8F5]'
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100'
           }`}
         >
           <Shield className="w-3.5 h-3.5" />
@@ -524,8 +535,8 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
             <div className="md:col-span-2 space-y-6">
               <Card className="space-y-5">
                 <div>
-                  <h3 className="font-medium text-[#FAF8F5] text-sm">Personal Details</h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Update your display name and email address for alerts and custom templates.</p>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Personal Details</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Update your display name and email address for alerts and custom templates.</p>
                 </div>
 
                 {profileSuccess && (
@@ -573,11 +584,11 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
               {/* Workspace Settings Card */}
               <Card className="space-y-5">
                 <div>
-                  <h3 className="font-medium text-[#FAF8F5] text-sm flex items-center gap-2">
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-[#00E5FF]" />
                     <span>Workspace & System Settings</span>
                   </h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Adjust your localized environment, display preferences, and notification triggers.</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Adjust your localized environment, display preferences, and notification triggers.</p>
                 </div>
 
                 {settingsSuccess && (
@@ -597,11 +608,11 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 <form onSubmit={handleSaveSystemSettings} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Timezone</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Timezone</label>
                       <select
                         value={timezone}
                         onChange={(e) => setTimezone(e.target.value)}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="UTC">UTC (Coordinated Universal Time)</option>
                         <option value="America/New_York">EST (America/New_York)</option>
@@ -615,11 +626,11 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Language & Region</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Language & Region</label>
                       <select
                         value={locale}
                         onChange={(e) => setLocale(e.target.value)}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="en-US">English (United States)</option>
                         <option value="en-GB">English (United Kingdom)</option>
@@ -632,11 +643,11 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Interface Density</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Interface Density</label>
                       <select
                         value={uiDensity}
                         onChange={(e) => setUiDensity(e.target.value as 'comfortable' | 'compact')}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="comfortable">Comfortable Spacing</option>
                         <option value="compact">Compact Spacing</option>
@@ -645,58 +656,58 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
 
                   {/* Notification Section */}
-                  <div className="border-t border-white/5 pt-4 space-y-3">
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
                     <h4 className="text-xs font-semibold uppercase font-mono text-[#00E5FF] tracking-wider flex items-center gap-1.5">
                       <Bell className="w-3.5 h-3.5" />
                       <span>Notification Subscriptions</span>
                     </h4>
 
                     <div className="space-y-2.5">
-                      <div className="flex items-start gap-3 bg-[#111315]/30 p-3 border border-white/5 rounded-xl">
+                      <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3 border border-slate-200 dark:border-slate-700 rounded-xl">
                         <input
                           type="checkbox"
                           id="email_notifications"
                           checked={emailNotifications}
                           onChange={(e) => setEmailNotifications(e.target.checked)}
-                          className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                          className="w-4 h-4 mt-0.5 rounded border-slate-200 dark:border-white/10 bg-white dark:bg-[#10141C] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
                         />
                         <div>
-                          <label htmlFor="email_notifications" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                          <label htmlFor="email_notifications" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                             Analysis Reports
                           </label>
-                          <span className="text-[10px] text-[#B5B8BE]">Receive summaries and suggested playbooks directly in your inbox after processing logs.</span>
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400">Receive summaries and suggested playbooks directly in your inbox after processing logs.</span>
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3 bg-[#111315]/30 p-3 border border-white/5 rounded-xl">
+                      <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3 border border-slate-200 dark:border-slate-700 rounded-xl">
                         <input
                           type="checkbox"
                           id="security_alerts"
                           checked={securityAlerts}
                           onChange={(e) => setSecurityAlerts(e.target.checked)}
-                          className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                          className="w-4 h-4 mt-0.5 rounded border-slate-200 dark:border-white/10 bg-white dark:bg-[#10141C] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
                         />
                         <div>
-                          <label htmlFor="security_alerts" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                          <label htmlFor="security_alerts" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                             Security Alerts
                           </label>
-                          <span className="text-[10px] text-[#B5B8BE]">Get notified immediately of new device sign-ins, 2FA modifications, or credential updates.</span>
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400">Get notified immediately of new device sign-ins, 2FA modifications, or credential updates.</span>
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3 bg-[#111315]/30 p-3 border border-white/5 rounded-xl">
+                      <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3 border border-slate-200 dark:border-slate-700 rounded-xl">
                         <input
                           type="checkbox"
                           id="monthly_reports"
                           checked={monthlyReports}
                           onChange={(e) => setMonthlyReports(e.target.checked)}
-                          className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                          className="w-4 h-4 mt-0.5 rounded border-slate-200 dark:border-white/10 bg-white dark:bg-[#10141C] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
                         />
                         <div>
-                          <label htmlFor="monthly_reports" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                          <label htmlFor="monthly_reports" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                             Monthly Strategic Reports
                           </label>
-                          <span className="text-[10px] text-[#B5B8BE]">Opt-in to a comprehensive monthly trends analysis detailing voice alignment and metric progress.</span>
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400">Opt-in to a comprehensive monthly trends analysis detailing voice alignment and metric progress.</span>
                         </div>
                       </div>
                     </div>
@@ -713,8 +724,8 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
               {/* Security Credentials info card */}
               <Card className="space-y-6">
                 <div>
-                  <h3 className="font-medium text-[#FAF8F5] text-sm">Identity Management</h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Your login security settings and access tokens.</p>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Identity Management</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Your login security settings and access tokens.</p>
                 </div>
 
                 {changePasswordSuccess && (
@@ -728,42 +739,42 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
                 )}
 
-                <form onSubmit={handleUpdatePassword} className="space-y-3.5 border-t border-white/5 pt-4">
-                  <h4 className="text-xs font-semibold text-[#FAF8F5]">Change Account Password</h4>
+                <form onSubmit={handleUpdatePassword} className="space-y-3.5 border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Change Account Password</h4>
                   
                   <div className="space-y-1">
-                    <label className="text-[10px] text-[#B5B8BE] block font-medium">Current Password</label>
+                    <label className="text-[10px] text-slate-600 dark:text-slate-400 block font-medium">Current Password</label>
                     <input
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
-                      className="w-full p-2 bg-[#0a0a0a] border border-white/5 rounded-xl text-xs text-white"
+                      className="w-full p-2 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] text-[#B5B8BE] block font-medium">New Password</label>
+                    <label className="text-[10px] text-slate-600 dark:text-slate-400 block font-medium">New Password</label>
                     <input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Min 10 characters, upper/lower/numbers/symbols"
                       required
-                      className="w-full p-2 bg-[#0a0a0a] border border-white/5 rounded-xl text-xs text-white"
+                      className="w-full p-2 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] text-[#B5B8BE] block font-medium">Confirm New Password</label>
+                    <label className="text-[10px] text-slate-600 dark:text-slate-400 block font-medium">Confirm New Password</label>
                     <input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
-                      className="w-full p-2 bg-[#0a0a0a] border border-white/5 rounded-xl text-xs text-white"
+                      className="w-full p-2 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                     />
                   </div>
 
@@ -774,9 +785,9 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
                 </form>
                 
-                <div className="border-t border-white/5 pt-4 space-y-3">
-                  <h4 className="text-xs font-semibold text-[#FAF8F5]">Session and Device Security</h4>
-                  <p className="text-[10px] text-[#B5B8BE]">If you suspect unauthorized access or have signed in from public computers, you can force-terminate all other active login sessions globally.</p>
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Session and Device Security</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400">If you suspect unauthorized access or have signed in from public computers, you can force-terminate all other active login sessions globally.</p>
                   
                   {terminateSessionsSuccess && (
                     <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-medium">
@@ -789,10 +800,10 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center bg-white/5 border border-white/5 p-3 rounded-xl">
+                  <div className="flex justify-between items-center bg-white/5 border border-slate-200 dark:border-slate-700 p-3 rounded-xl">
                     <div>
-                      <span className="font-semibold block text-xs text-[#FAF8F5]">Active Sessions</span>
-                      <span className="text-[10px] text-[#B5B8BE]">Secure enterprise sessions resolved</span>
+                      <span className="font-semibold block text-xs text-slate-900 dark:text-slate-100">Active Sessions</span>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400">Secure enterprise sessions resolved</span>
                     </div>
                     <Button 
                       type="button" 
@@ -811,26 +822,26 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
             <div className="space-y-6">
               {/* Profile card summary */}
               <Card className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#00E5FF]/20 to-purple-500/20 border border-white/15 flex items-center justify-center mx-auto shadow-inner">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#00E5FF]/20 to-purple-500/20 border border-slate-300 dark:border-slate-300 dark:border-white/20 flex items-center justify-center mx-auto shadow-inner">
                   <UserIcon className="w-8 h-8 text-[#00E5FF]" />
                 </div>
                 
                 <div className="space-y-1">
-                  <h4 className="text-base font-medium text-[#FAF8F5]">{user.name}</h4>
-                  <p className="text-xs text-[#B5B8BE] font-mono truncate">{user.email}</p>
+                  <h4 className="text-base font-medium text-slate-900 dark:text-slate-100">{user.name}</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-mono truncate">{user.email}</p>
                 </div>
 
-                <div className="pt-2 border-t border-white/5 flex flex-col gap-2 text-xs">
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-[#B5B8BE]">Account Class:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Account Class:</span>
                     <span className="font-mono text-cyan-400 font-semibold uppercase">{user.plan}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#B5B8BE]">Authorized Role:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Authorized Role:</span>
                     <span className="font-mono text-emerald-400 font-semibold uppercase">{user.role}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#B5B8BE]">Monthly Usage Count:</span>
+                    <span className="text-slate-600 dark:text-slate-400">Monthly Usage Count:</span>
                     <span className="font-mono text-purple-300 font-semibold">{user.usage_count_month}</span>
                   </div>
                 </div>
@@ -842,7 +853,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   <Award className="w-4 h-4" />
                   <span>Tenant Integrity</span>
                 </div>
-                <p className="text-[11px] text-[#B5B8BE] leading-relaxed">
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                   Your profile belongs to a zero-trust tenant container, isolating your analyses and communication logs safely from external networks.
                 </p>
               </Card>
@@ -856,8 +867,8 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
             <div className="md:col-span-2 space-y-6">
               <Card className="space-y-5">
                 <div>
-                  <h3 className="font-medium text-[#FAF8F5] text-sm">Strategic Communication Style</h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Tailor how the analyzer shapes alternative revisions. These properties adjust recommendations automatically.</p>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Strategic Communication Style</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Tailor how the analyzer shapes alternative revisions. These properties adjust recommendations automatically.</p>
                 </div>
 
                 {prefSuccess && (
@@ -876,11 +887,11 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs text-[#B5B8BE]/60 font-sans block">Primary Style Class</label>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium font-sans block">Primary Style Class</label>
                     <select
                       value={commStyle}
                       onChange={(e) => setCommStyle(e.target.value)}
-                      className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none"
+                      className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none"
                     >
                       <option value="warm">Warm & Encouraging (Collaborative)</option>
                       <option value="direct">Direct & Concise (High-Efficiency)</option>
@@ -891,41 +902,41 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs text-[#B5B8BE]/60 font-sans block">Default Target Tone</label>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium font-sans block">Default Target Tone</label>
                     <input
                       type="text"
                       value={prefTone}
                       onChange={(e) => setPrefTone(e.target.value)}
                       placeholder="e.g. professional and brief, warm yet assertive"
-                      className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none"
+                      className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-[#B5B8BE]/60 font-sans block">General Strategic Directives / Workspace Context</label>
+                  <label className="text-xs text-slate-600 dark:text-slate-400 font-medium font-sans block">General Strategic Directives / Workspace Context</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={4}
                     placeholder="e.g. 'I tend to write long paragraphs when anxious. Keep revisions short.' or 'I manage a team of remote engineers. Revisions should emphasize clarity.'"
-                    className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none resize-none"
+                    className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none resize-none"
                   />
                 </div>
 
-                <div className="flex items-center gap-3 bg-[#111315]/50 p-4 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#10141C]/50 p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
                   <input
                     type="checkbox"
                     id="preserve_voice"
                     checked={preserveVoice}
                     onChange={(e) => setPreserveVoice(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF]"
+                    className="w-4 h-4 rounded border-slate-200 dark:border-white/10 bg-white dark:bg-[#10141C] text-[#00E5FF] focus:ring-[#00E5FF]"
                   />
                   <div>
-                    <label htmlFor="preserve_voice" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                    <label htmlFor="preserve_voice" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                       Preserve Original Signature Voice
                     </label>
-                    <span className="text-[10px] text-[#B5B8BE]">Ensure AI matches your personal syntactic quirks and vocabulary choices where safe.</span>
+                    <span className="text-[10px] text-slate-600 dark:text-slate-400">Ensure AI matches your personal syntactic quirks and vocabulary choices where safe.</span>
                   </div>
                 </div>
 
@@ -939,20 +950,20 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
               {/* Dynamic list preferences card */}
               <Card className="space-y-5">
                 <div>
-                  <h3 className="font-medium text-[#FAF8F5] text-sm">Phrases & Pattern Checklists</h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Supply specific word patterns that the AI analyzer should explicitly favor, filter, or avoid.</p>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Phrases & Pattern Checklists</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Supply specific word patterns that the AI analyzer should explicitly favor, filter, or avoid.</p>
                 </div>
 
                 {/* Overdone Patterns */}
                 <div className="space-y-3">
-                  <label className="text-xs font-medium text-[#FAF8F5] block">Phrasing Patterns I Overdo</label>
+                  <label className="text-xs font-medium text-slate-900 dark:text-slate-100 block">Phrasing Patterns I Overdo</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newOverdo}
                       onChange={(e) => setNewOverdo(e.target.value)}
                       placeholder="e.g. 'Just checking in', 'Sorry to bug you'"
-                      className="flex-1 p-2.5 bg-[#0a0a0a] border border-[#262626] rounded-xl text-xs text-[#FAF8F5] focus:outline-none"
+                      className="flex-1 p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none"
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOverdoPattern(); } }}
                     />
                     <Button type="button" variant="secondary" size="sm" onClick={addOverdoPattern}>
@@ -961,7 +972,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {overdoPatterns.length === 0 ? (
-                      <span className="text-[10px] text-[#B5B8BE]/40 font-mono italic">No patterns added yet.</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono italic">No patterns added yet.</span>
                     ) : (
                       overdoPatterns.map((p) => (
                         <span key={p} className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-950/20 text-amber-300 border border-amber-900/30 rounded-lg text-xs">
@@ -976,15 +987,15 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 </div>
 
                 {/* Favorite Phrases */}
-                <div className="space-y-3 border-t border-white/5 pt-4">
-                  <label className="text-xs font-medium text-[#FAF8F5] block">Favorite Terminology (Explicitly Prefer)</label>
+                <div className="space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <label className="text-xs font-medium text-slate-900 dark:text-slate-100 block">Favorite Terminology (Explicitly Prefer)</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newFav}
                       onChange={(e) => setNewFav(e.target.value)}
                       placeholder="e.g. 'Aligning vectors', 'Action item'"
-                      className="flex-1 p-2.5 bg-[#0a0a0a] border border-[#262626] rounded-xl text-xs text-[#FAF8F5] focus:outline-none"
+                      className="flex-1 p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none"
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFavoritePhrase(); } }}
                     />
                     <Button type="button" variant="secondary" size="sm" onClick={addFavoritePhrase}>
@@ -993,7 +1004,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {favoritePhrases.length === 0 ? (
-                      <span className="text-[10px] text-[#B5B8BE]/40 font-mono italic">No favorite phrases added yet.</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono italic">No favorite phrases added yet.</span>
                     ) : (
                       favoritePhrases.map((p) => (
                         <span key={p} className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-950/20 text-emerald-300 border border-emerald-900/30 rounded-lg text-xs">
@@ -1008,15 +1019,15 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 </div>
 
                 {/* Avoided Phrases */}
-                <div className="space-y-3 border-t border-white/5 pt-4">
-                  <label className="text-xs font-medium text-[#FAF8F5] block">Terms to Avoid (Filter Out)</label>
+                <div className="space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
+                  <label className="text-xs font-medium text-slate-900 dark:text-slate-100 block">Terms to Avoid (Filter Out)</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newAvoid}
                       onChange={(e) => setNewAvoid(e.target.value)}
                       placeholder="e.g. 'No worries', 'Basically'"
-                      className="flex-1 p-2.5 bg-[#0a0a0a] border border-[#262626] rounded-xl text-xs text-[#FAF8F5] focus:outline-none"
+                      className="flex-1 p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none"
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addAvoidedPhrase(); } }}
                     />
                     <Button type="button" variant="secondary" size="sm" onClick={addAvoidedPhrase}>
@@ -1025,7 +1036,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {avoidedPhrases.length === 0 ? (
-                      <span className="text-[10px] text-[#B5B8BE]/40 font-mono italic">No avoided phrases added yet.</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono italic">No avoided phrases added yet.</span>
                     ) : (
                       avoidedPhrases.map((p) => (
                         <span key={p} className="flex items-center gap-1.5 px-2.5 py-1 bg-red-950/20 text-red-300 border border-red-900/30 rounded-lg text-xs">
@@ -1047,12 +1058,12 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   <Sparkles className="w-4 h-4" />
                   <span>Analyzer Calibration</span>
                 </div>
-                <p className="text-[11px] text-[#B5B8BE] leading-relaxed">
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                   These filters are combined with specific scenario matrices (such as boundaries, billing, missed deadlines) and passed into the LLM during structural analysis.
                 </p>
-                <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-[#B5B8BE] space-y-1">
-                  <div>• Default scenario: <span className="text-[#FAF8F5]">{defScenario}</span></div>
-                  <div>• Filter arrays size: <span className="text-[#FAF8F5]">{overdoPatterns.length + favoritePhrases.length + avoidedPhrases.length} rules</span></div>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 text-[11px] font-mono text-slate-600 dark:text-slate-400 space-y-1">
+                  <div>• Default scenario: <span className="text-slate-900 dark:text-slate-100">{defScenario}</span></div>
+                  <div>• Filter arrays size: <span className="text-slate-900 dark:text-slate-100">{overdoPatterns.length + favoritePhrases.length + avoidedPhrases.length} rules</span></div>
                 </div>
               </Card>
             </div>
@@ -1067,24 +1078,41 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
               {/* Usage stats card */}
               <Card className="space-y-5">
                 <div>
-                  <h3 className="font-medium text-[#FAF8F5] text-sm">Monthly Strategic Analysis Usage</h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Usage metrics reset on the 1st of every month.</p>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Monthly Strategic Analysis Usage</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Usage metrics reset on the 1st of every month.</p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#B5B8BE]">Strategic Revisions Count:</span>
-                    <span className="font-mono text-[#FAF8F5] font-semibold">
-                      {user.usage_count_month} analyses (unlimited)
+                    <span className="text-slate-600 dark:text-slate-400">Strategic Revisions Count:</span>
+                    <span className="font-mono text-slate-900 dark:text-slate-100 font-semibold">
+                      {user.usage_count_month} / {user.plan === 'free' ? '5' : user.plan === 'pro' ? '100' : 'Unlimited'} analyses
                     </span>
+                  </div>
+                  
+                  {/* Progress bar */}
+                  <div className="w-full h-2.5 bg-slate-50 dark:bg-[#10141C] border border-slate-200 dark:border-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#00E5FF] to-purple-500 transition-all duration-500" 
+                      style={{ 
+                        width: `${Math.min(
+                          100, 
+                          user.plan === 'free' 
+                            ? (user.usage_count_month / 5) * 100 
+                            : user.plan === 'pro' 
+                              ? (user.usage_count_month / 100) * 100 
+                              : 10
+                        )}%` 
+                      }}
+                    />
                   </div>
                 </div>
 
-                <div className="p-4 bg-[#111315]/50 border border-white/5 rounded-xl flex items-start gap-3">
+                <div className="p-4 bg-slate-50 dark:bg-[#10141C]/50 border border-slate-200 dark:border-slate-700 rounded-xl flex items-start gap-3">
                   <Zap className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="space-y-1 text-xs">
-                    <span className="font-medium text-[#FAF8F5] block">Full access, no limits</span>
-                    <p className="text-[11px] text-[#B5B8BE]">Every account gets unlimited strategic analyses, the AI Communication Coach, Scenario Simulator, and full diagnostic breakdowns — no upgrade required.</p>
+                    <span className="font-medium text-slate-900 dark:text-slate-100 block">Need more API quota?</span>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Plus and Pro accounts receive dedicated LLM context windows, priority GPU inference queue, and custom playbooks storage.</p>
                   </div>
                 </div>
               </Card>
@@ -1093,16 +1121,16 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 
                 {/* Free plan */}
-                <Card className={`space-y-4 flex flex-col justify-between border ${user.plan === 'free' ? 'border-[#00E5FF]/40 bg-[#00E5FF]/5' : 'border-white/5'}`}>
+                <Card className={`space-y-4 flex flex-col justify-between border ${user.plan === 'free' ? 'border-[#00E5FF]/40 bg-[#00E5FF]/5' : 'border-slate-200 dark:border-slate-700'}`}>
                   <div className="space-y-2">
-                    <span className="text-[9px] uppercase tracking-wider font-mono text-[#B5B8BE]">Standard Sandbox</span>
-                    <h4 className="text-sm font-semibold text-[#FAF8F5]">Free Tier</h4>
-                    <p className="text-[11px] text-[#B5B8BE]">Basic tone adjustment, 5 analyses per month.</p>
+                    <span className="text-[9px] uppercase tracking-wider font-mono text-slate-600 dark:text-slate-400">Standard Sandbox</span>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Free Tier</h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Basic tone adjustment, 5 analyses per month.</p>
                   </div>
-                  <div className="pt-4 border-t border-white/5 space-y-3">
-                    <div className="font-mono text-xs font-semibold text-[#FAF8F5]">$0 <span className="text-[10px] opacity-60">/ mo</span></div>
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                    <div className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">$0 <span className="text-[10px] opacity-60">/ mo</span></div>
                     {user.plan === 'free' ? (
-                      <span className="block text-center text-[10px] font-mono py-1.5 bg-white/5 border border-white/10 rounded-lg text-[#FAF8F5]">ACTIVE</span>
+                      <span className="block text-center text-[10px] font-mono py-1.5 bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-slate-100">ACTIVE</span>
                     ) : (
                       <Button variant="secondary" size="sm" className="w-full text-center text-xs" onClick={() => handleUpgradeLocal('free')} loading={upgradingPlan === 'free'}>
                         Downgrade
@@ -1112,16 +1140,16 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 </Card>
 
                 {/* Pro plan */}
-                <Card className={`space-y-4 flex flex-col justify-between border ${user.plan === 'pro' ? 'border-[#00E5FF]/40 bg-[#00E5FF]/5' : 'border-white/5'}`}>
+                <Card className={`space-y-4 flex flex-col justify-between border ${user.plan === 'pro' ? 'border-[#00E5FF]/40 bg-[#00E5FF]/5' : 'border-slate-200 dark:border-slate-700'}`}>
                   <div className="space-y-2">
                     <span className="text-[9px] uppercase tracking-wider font-mono text-[#00E5FF] font-semibold">Most Popular</span>
-                    <h4 className="text-sm font-semibold text-[#FAF8F5]">Pro Analyst</h4>
-                    <p className="text-[11px] text-[#B5B8BE]">100 analyses, custom templates creator, priority speed.</p>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Pro Analyst</h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">100 analyses, custom templates creator, priority speed.</p>
                   </div>
-                  <div className="pt-4 border-t border-white/5 space-y-3">
-                    <div className="font-mono text-xs font-semibold text-[#FAF8F5]">$19 <span className="text-[10px] opacity-60">/ mo</span></div>
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                    <div className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">$19 <span className="text-[10px] opacity-60">/ mo</span></div>
                     {user.plan === 'pro' ? (
-                      <span className="block text-center text-[10px] font-mono py-1.5 bg-white/5 border border-white/10 rounded-lg text-[#00E5FF]">ACTIVE</span>
+                      <span className="block text-center text-[10px] font-mono py-1.5 bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-[#00E5FF]">ACTIVE</span>
                     ) : (
                       <Button variant="primary" size="sm" className="w-full text-center text-xs" onClick={() => handleUpgradeLocal('pro')} loading={upgradingPlan === 'pro'}>
                         Upgrade Pro
@@ -1131,16 +1159,16 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 </Card>
 
                 {/* Plus plan */}
-                <Card className={`space-y-4 flex flex-col justify-between border ${user.plan === 'plus' ? 'border-[#00E5FF]/40 bg-[#00E5FF]/5' : 'border-white/5'}`}>
+                <Card className={`space-y-4 flex flex-col justify-between border ${user.plan === 'plus' ? 'border-[#00E5FF]/40 bg-[#00E5FF]/5' : 'border-slate-200 dark:border-slate-700'}`}>
                   <div className="space-y-2">
                     <span className="text-[9px] uppercase tracking-wider font-mono text-purple-400 font-semibold">Unlimited Power</span>
-                    <h4 className="text-sm font-semibold text-[#FAF8F5]">Plus Executive</h4>
-                    <p className="text-[11px] text-[#B5B8BE]">Unlimited analyses, premium playbooks, full audit trail.</p>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Plus Executive</h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Unlimited analyses, premium playbooks, full audit trail.</p>
                   </div>
-                  <div className="pt-4 border-t border-white/5 space-y-3">
-                    <div className="font-mono text-xs font-semibold text-[#FAF8F5]">$49 <span className="text-[10px] opacity-60">/ mo</span></div>
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                    <div className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100">$49 <span className="text-[10px] opacity-60">/ mo</span></div>
                     {user.plan === 'plus' ? (
-                      <span className="block text-center text-[10px] font-mono py-1.5 bg-white/5 border border-white/10 rounded-lg text-[#00E5FF]">ACTIVE</span>
+                      <span className="block text-center text-[10px] font-mono py-1.5 bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-[#00E5FF]">ACTIVE</span>
                     ) : (
                       <Button variant="primary" size="sm" className="w-full text-center text-xs" onClick={() => handleUpgradeLocal('plus')} loading={upgradingPlan === 'plus'}>
                         Upgrade Plus
@@ -1159,10 +1187,10 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   <CreditCard className="w-4 h-4" />
                   <span>Billing Ledger</span>
                 </div>
-                <div className="text-xs space-y-2 text-[#B5B8BE]">
+                <div className="text-xs space-y-2 text-slate-600 dark:text-slate-400">
                   <div className="flex justify-between">
                     <span>Customer ID:</span>
-                    <span className="font-mono text-[#FAF8F5] truncate max-w-[120px]" title={user.billing_customer_id || 'unassigned'}>
+                    <span className="font-mono text-slate-900 dark:text-slate-100 truncate max-w-[120px]" title={user.billing_customer_id || 'unassigned'}>
                       {user.billing_customer_id || 'not_billed'}
                     </span>
                   </div>
@@ -1172,7 +1200,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   </div>
                   <div className="flex justify-between">
                     <span>Currency Profile:</span>
-                    <span className="font-mono text-[#FAF8F5]">USD ($)</span>
+                    <span className="font-mono text-slate-900 dark:text-slate-100">USD ($)</span>
                   </div>
                 </div>
               </Card>
@@ -1191,9 +1219,9 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <Smartphone className="w-5 h-5 text-[#00E5FF]" />
-                      <h3 className="font-medium text-[#FAF8F5] text-sm">Two-Factor Authentication (2FA)</h3>
+                      <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Two-Factor Authentication (2FA)</h3>
                     </div>
-                    <p className="text-xs text-[#B5B8BE] max-w-md">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md">
                       Enforce an additional layer of security by requiring a 6-digit cryptographic TOTP token from an authenticator app (Google Authenticator, Duo, etc.) upon sign-in.
                     </p>
                   </div>
@@ -1243,24 +1271,24 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 )}
 
                 {mfaSetupMode && (
-                  <div className="p-5 bg-[#111315]/80 border border-white/5 rounded-xl space-y-5 animate-fade-in">
+                  <div className="p-5 bg-slate-50 dark:bg-[#10141C]/80 border border-slate-200 dark:border-slate-700 rounded-xl space-y-5 animate-fade-in">
                     <h4 className="text-xs font-semibold uppercase font-mono text-[#00E5FF] tracking-wider">Setup Multi-Factor Authentication</h4>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
                       {/* QR Code */}
-                      <div className="bg-white p-3 rounded-lg w-fit mx-auto md:mx-0 border border-white/10">
+                      <div className="bg-white p-3 rounded-lg w-fit mx-auto md:mx-0 border border-slate-200 dark:border-white/10">
                         <img src={mfaQrCode} alt="TOTP QR Code" className="w-32 h-32 select-none" />
                       </div>
 
                       {/* Guide */}
                       <div className="md:col-span-2 space-y-2 text-xs">
-                        <p className="text-[#FAF8F5]">
+                        <p className="text-slate-900 dark:text-slate-100">
                           1. Scan the QR code using your authenticator app.
                         </p>
-                        <p className="text-[#B5B8BE]">
+                        <p className="text-slate-600 dark:text-slate-400">
                           Alternatively, input the manual configuration key:
                         </p>
-                        <div className="flex items-center gap-2 bg-[#1A1D20] p-2 rounded border border-white/5 font-mono text-[10px]">
+                        <div className="flex items-center gap-2 bg-[#1A1D20] p-2 rounded border border-slate-200 dark:border-slate-700 font-mono text-[10px]">
                           <span className="truncate flex-1">
                             {showSecret ? mfaSecret : '•••• •••• •••• •••• ••••'}
                           </span>
@@ -1276,8 +1304,8 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                     </div>
 
                     {/* Verification form */}
-                    <form onSubmit={handleVerify2FA} className="space-y-3 pt-3 border-t border-white/5">
-                      <label className="text-xs text-[#FAF8F5] block">
+                    <form onSubmit={handleVerify2FA} className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                      <label className="text-xs text-slate-900 dark:text-slate-100 block">
                         2. Input the generated 6-digit confirmation code:
                       </label>
                       <div className="flex gap-3">
@@ -1287,7 +1315,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                           value={verificationCode}
                           onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
                           placeholder="000000"
-                          className="w-36 p-2.5 bg-[#0a0a0a] border border-white/5 focus:border-[#00E5FF] rounded-xl text-center font-mono text-sm tracking-widest text-[#FAF8F5] focus:outline-none"
+                          className="w-36 p-2.5 bg-white dark:bg-[#10141C] border border-slate-200 dark:border-slate-700 focus:border-[#00E5FF] rounded-xl text-center font-mono text-sm tracking-widest text-slate-900 dark:text-slate-100 focus:outline-none"
                           required
                         />
                         <Button
@@ -1300,7 +1328,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                         <button
                           type="button"
                           onClick={() => setMfaSetupMode(false)}
-                          className="px-4 py-2.5 text-xs text-[#B5B8BE] hover:text-white transition bg-transparent cursor-pointer"
+                          className="px-4 py-2.5 text-xs text-slate-600 dark:text-slate-400 hover:text-white transition bg-transparent cursor-pointer"
                         >
                           Cancel
                         </button>
@@ -1312,40 +1340,40 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
 
               {/* Section: WAF edge metrics & threat report */}
               <Card className="space-y-4">
-                <div className="flex items-center gap-2.5 border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-700 pb-3">
                   <ShieldCheck className="w-5 h-5 text-emerald-400" />
                   <div>
-                    <h3 className="font-medium text-[#FAF8F5] text-sm">Web Application Firewall (WAF)</h3>
-                    <p className="text-[10px] text-[#B5B8BE]">Dynamic SQL injection, Directory Traversal, and XSS filtering is active.</p>
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Web Application Firewall (WAF)</h3>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400">Dynamic SQL injection, Directory Traversal, and XSS filtering is active.</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 text-center">
-                  <div className="bg-[#111315]/50 p-3 rounded-xl border border-white/5 space-y-1">
-                    <span className="text-[9px] uppercase tracking-wider text-[#B5B8BE] font-mono">Status</span>
+                  <div className="bg-slate-50 dark:bg-[#10141C]/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-mono">Status</span>
                     <p className="text-xs text-emerald-400 font-semibold uppercase font-mono">Enforcing</p>
                   </div>
-                  <div className="bg-[#111315]/50 p-3 rounded-xl border border-white/5 space-y-1">
-                    <span className="text-[9px] uppercase tracking-wider text-[#B5B8BE] font-mono">Payload Limit</span>
-                    <p className="text-xs text-[#FAF8F5] font-semibold font-mono">100 KB</p>
+                  <div className="bg-slate-50 dark:bg-[#10141C]/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-mono">Payload Limit</span>
+                    <p className="text-xs text-slate-900 dark:text-slate-100 font-semibold font-mono">100 KB</p>
                   </div>
-                  <div className="bg-[#111315]/50 p-3 rounded-xl border border-white/5 space-y-1">
-                    <span className="text-[9px] uppercase tracking-wider text-[#B5B8BE] font-mono">XSS Filter</span>
+                  <div className="bg-slate-50 dark:bg-[#10141C]/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-mono">XSS Filter</span>
                     <p className="text-xs text-emerald-400 font-semibold uppercase font-mono">Sanitizing</p>
                   </div>
-                  <div className="bg-[#111315]/50 p-3 rounded-xl border border-white/5 space-y-1">
-                    <span className="text-[9px] uppercase tracking-wider text-[#B5B8BE] font-mono">Rate Limiters</span>
-                    <p className="text-xs text-[#FAF8F5] font-semibold font-mono">Active</p>
+                  <div className="bg-slate-50 dark:bg-[#10141C]/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-600 dark:text-slate-400 font-mono">Rate Limiters</span>
+                    <p className="text-xs text-slate-900 dark:text-slate-100 font-semibold font-mono">Active</p>
                   </div>
                 </div>
               </Card>
 
               {/* Section: Audit Logs */}
               <Card className="space-y-4">
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
                   <div className="space-y-0.5">
-                    <h3 className="font-medium text-[#FAF8F5] text-sm">Security Audit Logs</h3>
-                    <p className="text-[10px] text-[#B5B8BE]">Immutable ledger tracking authentication, administrative changes, and edge blocks.</p>
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Security Audit Logs</h3>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400">Immutable ledger tracking authentication, administrative changes, and edge blocks.</p>
                   </div>
                   <button 
                     onClick={fetchSecurityMetrics}
@@ -1356,21 +1384,21 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                 </div>
 
                 {loadingLogs ? (
-                  <p className="text-center py-6 text-xs text-[#B5B8BE]">Querying security database...</p>
+                  <p className="text-center py-6 text-xs text-slate-600 dark:text-slate-400">Querying security database...</p>
                 ) : auditLogs.length === 0 ? (
-                  <p className="text-center py-6 text-xs text-[#B5B8BE]">No audit ledger records available.</p>
+                  <p className="text-center py-6 text-xs text-slate-600 dark:text-slate-400">No audit ledger records available.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-[11px] font-sans">
                       <thead>
-                        <tr className="border-b border-white/5 text-[#B5B8BE] uppercase font-mono text-[9px] tracking-wider">
+                        <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 uppercase font-mono text-[9px] tracking-wider">
                           <th className="py-2">Timestamp</th>
                           <th className="py-2">Event</th>
                           <th className="py-2">IP Address</th>
                           <th className="py-2">Audit Action Details</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-white/5 font-mono text-[#FAF8F5]">
+                      <tbody className="divide-y divide-white/5 font-mono text-slate-900 dark:text-slate-100">
                         {auditLogs.map((log) => (
                           <tr key={log.id} className="hover:bg-white/5 transition">
                             <td className="py-2.5 text-[10px] opacity-70">
@@ -1385,8 +1413,8 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                                 {log.event}
                               </span>
                             </td>
-                            <td className="py-2.5 text-[#B5B8BE]">{log.ip_address || 'system'}</td>
-                            <td className="py-2.5 text-xs text-[#B5B8BE] font-sans max-w-xs truncate" title={log.details}>
+                            <td className="py-2.5 text-slate-600 dark:text-slate-400">{log.ip_address || 'system'}</td>
+                            <td className="py-2.5 text-xs text-slate-600 dark:text-slate-400 font-sans max-w-xs truncate" title={log.details}>
                               {log.details}
                             </td>
                           </tr>
@@ -1402,26 +1430,26 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
             {/* Right column: Database resilience indicators */}
             <div className="space-y-6">
               <Card className="space-y-4">
-                <div className="flex items-center gap-2.5 border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-700 pb-3">
                   <Database className="w-5 h-5 text-purple-400" />
                   <div>
-                    <h3 className="font-medium text-[#FAF8F5] text-sm">Resilient Database Info</h3>
-                    <p className="text-[10px] text-[#B5B8BE]">PostgreSQL schema & RLS policies.</p>
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Resilient Database Info</h3>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400">PostgreSQL schema & RLS policies.</p>
                   </div>
                 </div>
 
                 <div className="space-y-4 text-xs">
-                  <div className="bg-[#111315]/50 p-4 border border-white/5 rounded-xl space-y-3">
+                  <div className="bg-slate-50 dark:bg-[#10141C]/50 p-4 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-[#B5B8BE]">Primary DB Engine:</span>
-                      <span className="font-mono text-[#FAF8F5] font-semibold">PostgreSQL</span>
+                      <span className="text-slate-600 dark:text-slate-400">Primary DB Engine:</span>
+                      <span className="font-mono text-slate-900 dark:text-slate-100 font-semibold">PostgreSQL</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[#B5B8BE]">Isolation Mode:</span>
+                      <span className="text-slate-600 dark:text-slate-400">Isolation Mode:</span>
                       <span className="font-mono text-emerald-400 font-bold">ROW-LEVEL SECURITY</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[#B5B8BE]">Status:</span>
+                      <span className="text-slate-600 dark:text-slate-400">Status:</span>
                       <div className="flex items-center gap-1.5 font-semibold text-emerald-400 font-mono">
                         <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                         {isPgActive ? 'PG_CLOUD_ACTIVE' : 'PG_EMULATOR_ENFORCED'}
@@ -1429,9 +1457,9 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                     </div>
                   </div>
 
-                  <div className="p-3 bg-[#111315]/30 rounded-xl space-y-2 border border-white/5">
+                  <div className="p-3 bg-slate-50 dark:bg-[#10141C]/30 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
                     <h4 className="text-[10px] font-bold uppercase font-mono tracking-wider text-[#00E5FF]">Active RLS Policies</h4>
-                    <ul className="space-y-1.5 text-[11px] font-mono text-[#B5B8BE] list-disc list-inside">
+                    <ul className="space-y-1.5 text-[11px] font-mono text-slate-600 dark:text-slate-400 list-disc list-inside">
                       <li>analyses (user_id = context_user)</li>
                       <li>user_profiles (user_id = context_user)</li>
                       <li>sessions (user_id = context_user)</li>
@@ -1439,7 +1467,7 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
                     </ul>
                   </div>
 
-                  <p className="text-[10px] text-[#B5B8BE] leading-relaxed font-sans font-light">
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans font-light">
                     Database queries execute in transaction contexts, setting secure user variables prior to query dispatch. This guarantees zero leak across tenant profiles.
                   </p>
                 </div>
@@ -1448,8 +1476,8 @@ export default function SecurityPanel({ user, onUpdateUser, profile, onUpdatePro
               {/* Encryption indicator */}
               <Card className="text-center space-y-3">
                 <Lock className="w-8 h-8 text-[#00E5FF] mx-auto opacity-80" />
-                <h4 className="text-sm font-medium text-[#FAF8F5]">Strict Zero-Trust Encryption</h4>
-                <p className="text-[11px] text-[#B5B8BE] leading-relaxed max-w-xs mx-auto font-sans font-light">
+                <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100">Strict Zero-Trust Encryption</h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs mx-auto font-sans font-light">
                   Password keys are hashed using enterprise standard SHA-512 PBKDF2 with unique salts. Active session tracking is enforced with 256-bit cryptographically secure identifiers.
                 </p>
               </Card>

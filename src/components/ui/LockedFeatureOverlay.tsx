@@ -35,7 +35,7 @@ export default function LockedFeatureOverlay({
       </div>
 
       {/* Absolutely positioned beautiful glassmorphism card overlay */}
-      <div className="absolute inset-0 bg-[#0a0a0ab0] backdrop-blur-[4px] flex flex-col justify-center items-center p-6 text-center animate-fadeIn z-10">
+      <div className="absolute inset-0 bg-slate-950/85 dark:bg-[#0B0F19]/90 backdrop-blur-[6px] flex flex-col justify-center items-center p-6 text-center animate-fadeIn z-10">
         <div className="max-w-md space-y-4">
           
           {/* Locked Badge */}
@@ -44,21 +44,21 @@ export default function LockedFeatureOverlay({
           </div>
 
           <div className="space-y-1">
-            <span className="text-[9px] uppercase font-mono tracking-widest text-[#00E5FF] font-bold">
+            <span className="text-[9px] uppercase font-mono tracking-widest text-cyan-400 font-bold">
               Premium Module • Requires {requiredPlanDetail?.name || gate.requiredPlan}
             </span>
             <h4 className="text-base font-semibold text-white font-display tracking-tight">
               {gate.name}
             </h4>
-            <p className="text-xs text-[#a0a0a0] leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               {gate.description}
             </p>
           </div>
 
           {/* Benefits Bullet Points */}
           {gate.benefits && gate.benefits.length > 0 && (
-            <div className="bg-[#111315]/80 border border-white/5 p-3 rounded-xl text-left space-y-1.5 text-[10px] text-[#B5B8BE]">
-              <span className="font-mono text-[9px] text-[#888] uppercase block font-bold">What you unlock:</span>
+            <div className="bg-slate-900/90 dark:bg-[#151B28]/90 border border-white/10 p-3 rounded-xl text-left space-y-1.5 text-[10px] text-slate-200">
+              <span className="font-mono text-[9px] text-slate-400 uppercase block font-bold">What you unlock:</span>
               {gate.benefits.map((benefit, idx) => (
                 <div key={idx} className="flex items-start gap-1.5">
                   <Check className="w-3 h-3 text-[#00E5FF] mt-0.5 flex-shrink-0" />

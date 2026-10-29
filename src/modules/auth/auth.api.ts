@@ -9,6 +9,8 @@ import { User, UserProfile } from '../../types';
 
 export interface AuthResponse {
   success?: boolean;
+  token?: string;
+  sessionId?: string;
   user: User;
   profile: UserProfile;
   two_factor_required?: boolean;
@@ -86,11 +88,11 @@ export const authApi = {
     return api.post<any>('/api/auth/logout-all-devices');
   },
 
-  async oauthCallback(payload: { credential: string }): Promise<AuthResponse> {
+  async oauthCallback(payload: { provider: string; email: string; name: string; id: string }): Promise<AuthResponse> {
     return api.post<AuthResponse>('/api/auth/oauth-callback', payload);
   },
 
-  async oauthLink(payload: { credential: string }): Promise<{ success: boolean; user: User; error?: string }> {
+  async oauthLink(payload: { provider: string; email: string; id: string }): Promise<{ success: boolean; user: User; error?: string }> {
     return api.post<any>('/api/auth/oauth-link', payload);
   },
 

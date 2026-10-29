@@ -18,8 +18,8 @@ export function Card({
 }: CardProps) {
   return (
     <div
-      className={`bg-[#1A1D20] border border-white/5 p-6 rounded-xl shadow-lg relative overflow-hidden transition-all duration-200 ${
-        hoverable ? 'hover:border-white/10 hover:shadow-xl cursor-pointer' : ''
+      className={`bg-white dark:bg-[#151B28] text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm transition-all duration-200 ${
+        hoverable ? 'hover:border-slate-300 dark:hover:border-white/20 hover:shadow-md cursor-pointer' : ''
       } ${className}`}
       {...props}
     >

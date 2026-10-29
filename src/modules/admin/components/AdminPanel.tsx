@@ -11,7 +11,6 @@ import {
 import { User, UserProfile, Template, Playbook, BlogPost, Testimonial } from '../../../types';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { isSuperAdminOwner, isAdminTier } from '../../../lib/config';
 
 interface AdminPanelProps {
   users: User[];
@@ -146,7 +145,7 @@ export default function AdminPanel({
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-6 rounded-2xl animate-fade-in border border-[#e2dea7]" style={{ backgroundColor: '#FAF6C7', color: '#111315' }}>
+    <div className="space-y-6 max-w-6xl mx-auto p-6 rounded-2xl animate-fade-in border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#0B0E14] text-slate-900 dark:text-slate-100" >
       {/* Toast Notification */}
       {successToast && (
         <div className="bg-emerald-600 text-white px-4 py-3 rounded-xl border border-emerald-500/20 shadow-lg flex items-center justify-between animate-fade-in font-sans">
@@ -159,23 +158,27 @@ export default function AdminPanel({
       )}
 
       {/* Top dashboard metadata */}
-      <div className="border-b border-black/10 pb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="border-b border-slate-200 dark:border-white/10 pb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1 font-sans">
-          <span className="text-[10px] uppercase font-mono tracking-widest text-slate-800 font-bold flex items-center gap-1.5">
-            <Settings className="w-3.5 h-3.5 text-slate-800" />
+          <span className="text-[10px] uppercase font-mono tracking-widest text-sky-700 dark:text-cyan-400 font-bold flex items-center gap-1.5">
+            <Settings className="w-3.5 h-3.5" />
             ADMIN CONTROL TERMINAL
           </span>
-          <h1 className="text-2xl font-light font-serif text-slate-900">Database & Content Managers</h1>
-          <p className="text-xs text-slate-700 font-light">Admin operations for scenario templates, playbooks, testimonials, and blog dispatchers.</p>
+          <h1 className="text-2xl font-light font-serif text-slate-900 dark:text-slate-100">Database & Content Managers</h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 font-light">Admin operations for scenario templates, playbooks, testimonials, and blog dispatchers.</p>
         </div>
 
         {/* Admin Tabs */}
-        <div className="flex flex-wrap gap-1.5 bg-[#141414] border border-[#262626] p-1 rounded-xl">
+        <div className="flex flex-wrap gap-1.5 bg-slate-100 dark:bg-[#141821] border border-slate-200 dark:border-white/10 p-1 rounded-xl">
           {(['users', 'templates', 'blog', 'testimonials'] as const).map((tab) => (
             <button 
               key={tab}
               onClick={() => { setActiveTab(tab); setEditingItem(null); }} 
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition cursor-pointer ${activeTab === tab ? 'bg-white text-black' : 'text-[#a0a0a0] hover:text-white bg-transparent'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition cursor-pointer ${
+                activeTab === tab 
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 bg-transparent'
+              }`}
             >
               {tab.toUpperCase()} ({tab === 'users' ? users.length : tab === 'templates' ? templates.length : tab === 'blog' ? blog_posts.length : testimonials.length})
             </button>
@@ -185,35 +188,35 @@ export default function AdminPanel({
 
       {/* Stats Board */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-[#141414] border border-[#262626] p-4 rounded-xl text-center space-y-1">
-          <span className="text-[10px] text-[#a0a0a0] block uppercase font-mono">Total Members</span>
-          <span className="text-2xl font-light text-white font-serif">{totalUsersCount}</span>
+        <div className="bg-white dark:bg-[#141821] border border-slate-200 dark:border-white/10 p-4 rounded-xl text-center space-y-1 shadow-xs">
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block uppercase font-mono font-medium">Total Members</span>
+          <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100 font-serif">{totalUsersCount}</span>
         </div>
       </div>
 
       {/* Editor Drawer panel */}
       {editingItem && (
-        <form onSubmit={handleSave} className="bg-[#1a1a1a] p-6 rounded-2xl border border-white/10 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2 font-sans">
-            <Edit className="w-4 h-4 text-[#FAF8F5]" />
+        <form onSubmit={handleSave} className="bg-white dark:bg-[#141821] p-6 rounded-2xl border border-slate-200 dark:border-white/10 space-y-4 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 font-sans">
+            <Edit className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
             Editing {activeTab === 'templates' ? 'Scenario Template' : activeTab === 'blog' ? 'Blog Dispatch' : activeTab === 'testimonials' ? 'Testimonial Review' : 'User Account Details'}
           </h3>
 
           {activeTab === 'users' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Full Name</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">Full Name</label>
                 <input 
                   type="text" 
                   value={editingItem.name || ''} 
                   onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
                   required
                   placeholder="e.g. Kia"
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none font-sans font-light"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-sky-500 font-sans font-light"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Email Address</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">Email Address</label>
                 <input 
                   type="email" 
                   value={editingItem.email || ''} 
@@ -221,40 +224,34 @@ export default function AdminPanel({
                   required
                   placeholder="e.g. alex@example.com"
                   disabled={!!editingItem.created_at}
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none font-sans font-light disabled:opacity-50"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-sky-500 font-sans font-light disabled:opacity-50"
                 />
               </div>
               {!editingItem.created_at && (
                 <div className="space-y-1.5">
-                  <label className="text-[#a0a0a0]">Password (Minimum 8 chars)</label>
+                  <label className="text-slate-600 dark:text-slate-400 font-medium">Password (Minimum 8 chars)</label>
                   <input 
                     type="password" 
                     value={editingItem.password || ''} 
                     onChange={(e) => setEditingItem({ ...editingItem, password: e.target.value })}
                     required
                     placeholder="Enter password"
-                    className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none font-sans font-light"
+                    className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-sky-500 font-sans font-light"
                   />
                 </div>
               )}
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Role / Authorization Level</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">Role / Authorization Level</label>
                 <select
                   value={editingItem.role || 'user'}
                   onChange={(e) => setEditingItem({ ...editingItem, role: e.target.value })}
-                  disabled={isAdminTier(editingItem.role) && !isSuperAdminOwner(currentUser?.email)}
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] text-white rounded-lg focus:outline-none font-sans font-light disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden font-sans font-light"
                 >
                   <option value="user">User (Standard Access)</option>
-                  {isSuperAdminOwner(currentUser?.email) && (
-                    <option value="admin">Admin (Full Control)</option>
-                  )}
+                  <option value="admin">Admin (Full Control)</option>
                   <option value="moderator">Moderator (Content Review)</option>
                   <option value="editor">Editor (Authoring/Blogs)</option>
                 </select>
-                {isAdminTier(editingItem.role) && !isSuperAdminOwner(currentUser?.email) && (
-                  <p className="text-[10px] text-amber-400">Only the designated owner account can change an admin's role.</p>
-                )}
               </div>
             </div>
           )}
@@ -262,32 +259,32 @@ export default function AdminPanel({
           {activeTab === 'templates' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Title</label>
+                <label className="text-slate-500 dark:text-slate-400">Title</label>
                 <input 
                   type="text" 
                   value={editingItem.title} 
                   onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Category</label>
+                <label className="text-slate-500 dark:text-slate-400">Category</label>
                 <input 
                   type="text" 
                   value={editingItem.category} 
                   onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[#a0a0a0]">Original Draft text</label>
+                <label className="text-slate-500 dark:text-slate-400">Original Draft text</label>
                 <textarea 
                   value={editingItem.draft} 
                   onChange={(e) => setEditingItem({ ...editingItem, draft: e.target.value })}
                   required
-                  className="w-full h-24 p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none resize-none font-sans font-light"
+                  className="w-full h-24 p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none font-sans font-light"
                 />
               </div>
             </div>
@@ -296,42 +293,42 @@ export default function AdminPanel({
           {activeTab === 'blog' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Title</label>
+                <label className="text-slate-500 dark:text-slate-400">Title</label>
                 <input 
                   type="text" 
                   value={editingItem.title} 
                   onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Slug (URL)</label>
+                <label className="text-slate-500 dark:text-slate-400">Slug (URL)</label>
                 <input 
                   type="text" 
                   value={editingItem.slug} 
                   onChange={(e) => setEditingItem({ ...editingItem, slug: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[#a0a0a0]">Excerpt</label>
+                <label className="text-slate-500 dark:text-slate-400">Excerpt</label>
                 <input 
                   type="text" 
                   value={editingItem.excerpt} 
                   onChange={(e) => setEditingItem({ ...editingItem, excerpt: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[#a0a0a0]">Article Markdown Content</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">Article Markdown Content</label>
                 <textarea 
                   value={editingItem.content} 
                   onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
                   required
-                  className="w-full h-44 p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none resize-none font-sans font-light"
+                  className="w-full h-44 p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden resize-none font-sans font-light"
                 />
               </div>
             </div>
@@ -340,32 +337,32 @@ export default function AdminPanel({
           {activeTab === 'testimonials' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">User Name</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">User Name</label>
                 <input 
                   type="text" 
                   value={editingItem.name} 
                   onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] focus:border-white/20 text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-sky-500"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[#a0a0a0]">Role / Occupation</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">Role / Occupation</label>
                 <input 
                   type="text" 
                   value={editingItem.role} 
                   onChange={(e) => setEditingItem({ ...editingItem, role: e.target.value })}
                   required
-                  className="w-full p-2.5 bg-[#0a0a0a] border border-[#262626] text-white rounded-lg focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden"
                 />
               </div>
               <div className="space-y-1.5 md:col-span-2">
-                <label className="text-[#a0a0a0]">Feedback message</label>
+                <label className="text-slate-600 dark:text-slate-400 font-medium">Feedback message</label>
                 <textarea 
                   value={editingItem.text} 
                   onChange={(e) => setEditingItem({ ...editingItem, text: e.target.value })}
                   required
-                  className="w-full h-20 p-2.5 bg-[#0a0a0a] border border-[#262626] text-white rounded-lg focus:outline-none resize-none font-sans font-light"
+                  className="w-full h-20 p-2.5 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden resize-none font-sans font-light"
                 />
               </div>
             </div>
@@ -378,7 +375,7 @@ export default function AdminPanel({
             <button 
               type="button" 
               onClick={() => { setEditingItem(null); setNewType(null); }} 
-              className="px-5 py-2 rounded bg-[#262626] hover:bg-[#333] text-white text-xs transition border-none cursor-pointer"
+              className="px-5 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium transition cursor-pointer"
             >
               Cancel
             </button>
@@ -391,7 +388,7 @@ export default function AdminPanel({
         {activeTab === 'users' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center pb-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-white font-bold block">User Accounts Directory</span>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-800 dark:text-slate-200 font-bold block">User Accounts Directory</span>
               <Button onClick={() => startNewItem('user')} variant="primary" size="sm" className="flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
                 Add User or Admin
@@ -400,32 +397,30 @@ export default function AdminPanel({
              <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-sans">
                 <thead>
-                  <tr className="border-b border-[#262626] text-[#a0a0a0] font-mono">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-mono">
                     <th className="pb-3 font-semibold">User details</th>
                     <th className="pb-3 font-semibold">Usage count</th>
                     <th className="pb-3 font-semibold text-right font-mono">Overhead operations</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#262626] font-light">
-                  {users.map((u, index) => (
-                    <tr key={u.id} className="hover:bg-white/[0.02]">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-light">
+                  {users.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02]">
                       <td className="py-3.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white block font-sans">{u.name}</span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 block font-sans">{u.name}</span>
                           {u.role && u.role !== 'user' && (
-                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[8px] font-mono uppercase font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[8px] font-mono uppercase font-bold">
                               {u.role}
                             </span>
                           )}
                         </div>
-                        <span className="text-[#666] text-[10px] font-mono">{u.email}</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[10px] font-mono">{u.email}</span>
                       </td>
-                      <td className="py-3.5 text-white font-mono">{u.usage_count_month || 0} analyses</td>
+                      <td className="py-3.5 text-slate-700 dark:text-slate-300 font-mono">{u.usage_count_month || 0} analyses</td>
                       <td className="py-3.5 text-right space-x-1.5">
-                        <button onClick={() => setEditingItem(u)} className="px-2 py-1 bg-white/5 text-white hover:bg-white/10 rounded text-[10px] font-mono font-bold transition cursor-pointer">EDIT</button>
-                        {(!isAdminTier(u.role) || isSuperAdminOwner(currentUser?.email)) && (
-                          <button onClick={() => handleDelete(u, 'user')} className="p-1 text-red-400 hover:bg-red-500/10 rounded cursor-pointer" title="Delete Account"><Trash className="w-3.5 h-3.5 inline" /></button>
-                        )}
+                        <button onClick={() => setEditingItem(u)} className="px-2 py-1 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded text-[10px] font-mono font-bold transition cursor-pointer">EDIT</button>
+                        <button onClick={() => handleDelete(u, 'user')} className="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded cursor-pointer" title="Delete Account"><Trash className="w-3.5 h-3.5 inline" /></button>
                       </td>
                     </tr>
                   ))}
@@ -438,7 +433,7 @@ export default function AdminPanel({
         {activeTab === 'templates' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center pb-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-white font-bold">Pre-built Scenarios Database</span>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-800 dark:text-slate-200 font-bold">Pre-built Scenarios Database</span>
               <Button onClick={() => startNewItem('template')} variant="primary" size="sm" className="flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
                 Add Starter Template
@@ -447,17 +442,17 @@ export default function AdminPanel({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {templates.map((t) => (
-                <div key={t.id} className="p-4 rounded-xl flex flex-col justify-between space-y-3 relative group" style={{ backgroundColor: '#E9E9E9' }}>
+                <div key={t.id} className="p-4 rounded-xl flex flex-col justify-between space-y-3 relative group bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 shadow-xs">
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
-                      <span className="text-[9px] uppercase font-mono bg-black/5 text-[#1a1a1a] px-1.5 py-0.5 rounded font-bold border border-black/10">{t.category}</span>
+                      <span className="text-[9px] uppercase font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded font-bold border border-slate-200 dark:border-slate-700">{t.category}</span>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                        <button onClick={() => setEditingItem(t)} className="p-1 text-[#1a1a1a] hover:bg-black/10 rounded cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDelete(t, 'template')} className="p-1 text-red-600 hover:bg-red-500/10 rounded cursor-pointer"><Trash className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setEditingItem(t)} className="p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDelete(t, 'template')} className="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded cursor-pointer"><Trash className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>
-                    <h4 className="font-bold text-[#1a1a1a] text-xs font-sans">{t.title}</h4>
-                    <p className="text-[11px] text-[#444444] italic line-clamp-2 font-sans font-normal">"{t.draft}"</p>
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-xs font-sans">{t.title}</h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 italic line-clamp-2 font-sans font-normal">"{t.draft}"</p>
                   </div>
                 </div>
               ))}
@@ -468,24 +463,24 @@ export default function AdminPanel({
         {activeTab === 'blog' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center pb-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-white font-bold">Informational Articles</span>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-800 dark:text-slate-200 font-bold">Informational Articles</span>
               <Button onClick={() => startNewItem('blog')} variant="primary" size="sm" className="flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
                 Dispatch New Post
               </Button>
             </div>
 
-            <div className="divide-y divide-[#262626]">
+            <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {blog_posts.map((post) => (
                 <div key={post.id} className="py-3.5 flex justify-between items-center gap-4 group font-sans">
                   <div className="space-y-0.5">
-                    <span className="text-[9px] font-mono text-[#a0a0a0] block font-light">{post.created_at} • By {post.author}</span>
-                    <h4 className="font-bold text-white text-xs">{post.title}</h4>
-                    <p className="text-[10.5px] text-[#888] font-light">{post.excerpt}</p>
+                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 block font-light">{post.created_at} • By {post.author}</span>
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{post.title}</h4>
+                    <p className="text-[10.5px] text-slate-600 dark:text-slate-400 font-light">{post.excerpt}</p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                    <button onClick={() => setEditingItem(post)} className="p-1.5 text-white hover:bg-white/10 rounded cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => handleDelete(post, 'blog')} className="p-1.5 text-red-400 hover:bg-red-500/10 rounded cursor-pointer"><Trash className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setEditingItem(post)} className="p-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDelete(post, 'blog')} className="p-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded cursor-pointer"><Trash className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
               ))}
@@ -496,7 +491,7 @@ export default function AdminPanel({
         {activeTab === 'testimonials' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center pb-2">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-white font-bold">Social Testimonials & Reviews</span>
+              <span className="text-[10px] uppercase font-mono tracking-widest text-slate-800 dark:text-slate-200 font-bold">Social Testimonials & Reviews</span>
               <Button onClick={() => startNewItem('testimonial')} variant="primary" size="sm" className="flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" />
                 Create Review
@@ -505,18 +500,18 @@ export default function AdminPanel({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {testimonials.map((test) => (
-                <div key={test.id} className="p-4 rounded-xl relative group space-y-2 font-sans" style={{ backgroundColor: '#E9E9E9' }}>
+                <div key={test.id} className="p-4 rounded-xl relative group space-y-2 font-sans bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 shadow-xs">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-[#1a1a1a] text-xs">{test.name}</h4>
-                      <p className="text-[10px] text-[#555555] font-mono">{test.role}</p>
+                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{test.name}</h4>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{test.role}</p>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                      <button onClick={() => setEditingItem(test)} className="p-1 text-[#1a1a1a] hover:bg-black/10 rounded cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDelete(test, 'testimonial')} className="p-1 text-red-600 hover:bg-red-500/10 rounded cursor-pointer"><Trash className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setEditingItem(test)} className="p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDelete(test, 'testimonial')} className="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded cursor-pointer"><Trash className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
-                  <p className="text-xs text-[#333333] leading-relaxed italic font-normal">"{test.text}"</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic font-normal">"{test.text}"</p>
                 </div>
               ))}
             </div>
@@ -529,17 +524,17 @@ export default function AdminPanel({
       {/* Delete Confirmation Modal */}
       {deleteConfirmItem && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-[#141414] border border-[#262626] rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-white font-sans">
+          <div className="bg-white dark:bg-[#141821] border border-slate-200 dark:border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-slate-900 dark:text-slate-100 font-sans">
             <div className="space-y-1">
-              <h4 className="text-base font-bold font-serif flex items-center gap-2 text-white">
-                <Trash className="w-5 h-5 text-red-500" />
+              <h4 className="text-base font-bold font-serif flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                <Trash className="w-5 h-5 text-rose-600 dark:text-red-500" />
                 Confirm Deletion
               </h4>
-              <p className="text-xs text-[#a0a0a0] font-light leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 font-light leading-relaxed">
                 Are you sure you want to permanently delete this {deleteConfirmItem.type} from the database? This action is irreversible.
               </p>
               {deleteConfirmItem.type === 'user' && (
-                <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-[11px] text-red-400">
+                <div className="mt-2 p-2 bg-rose-50 dark:bg-red-500/10 border border-rose-200 dark:border-red-500/20 rounded-lg text-[11px] text-rose-700 dark:text-red-400">
                   Deleting user <span className="font-semibold">{deleteConfirmItem.item.name}</span> ({deleteConfirmItem.item.email}) will also remove their associated profile and analysis history.
                 </div>
               )}
@@ -549,7 +544,7 @@ export default function AdminPanel({
                 type="button"
                 onClick={() => setDeleteConfirmItem(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-lg bg-[#262626] hover:bg-[#333] text-xs font-bold text-white transition cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -557,7 +552,7 @@ export default function AdminPanel({
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-xs font-bold text-white transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isDeleting ? 'Deleting...' : 'Permanently Delete'}
               </button>

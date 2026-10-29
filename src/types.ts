@@ -131,6 +131,7 @@ export interface OutputJson {
   tags: string[];
   is_fallback?: boolean;
   fallback_reason?: string;
+  api_key_status?: 'leaked' | 'quota_exceeded' | 'unavailable' | 'active';
 }
 
 export interface Analysis {

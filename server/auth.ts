@@ -4,6 +4,7 @@
  */
 
 import crypto from 'crypto';
+import { loadDB, saveDB } from './db';
 import { User } from '../src/types';
 
 export interface UserSession {
@@ -53,6 +54,34 @@ export function validatePasswordStrength(password: string): { isValid: boolean; 
 /**
  * Creates a new cryptographically secure session
  */
+export function createSession(userId: string): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  const currentDb = loadDB() as any;
+  
+  if (!currentDb.sessions) {
+    currentDb.sessions = [];
+  }
+
+  // Active Session Pruning (Self-Cleaning Cache Pattern) to prevent database bloat
+  const now = new Date();
+  currentDb.sessions = currentDb.sessions.filter((s: any) => new Date(s.expires_at) > now);
+
+  // Sessions expire in 24 hours
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  const newSession: UserSession = {
+    id: token,
+    user_id: userId,
+    expires_at: expiresAt,
+    created_at: new Date().toISOString()
+  };
+
+  currentDb.sessions.push(newSession);
+  saveDB();
+
+  return token;
+}
+
 /**
  * Parses raw cookies from Request header
  */

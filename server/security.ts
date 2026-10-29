@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { loadDB, saveDB } from './db';
+
 export interface AuditLog {
   id: string;
   user_id?: string;
@@ -13,12 +15,7 @@ export interface AuditLog {
 }
 
 /**
- * Fire-and-forget security event logger for use inside synchronous
- * middleware (WAF rules below run per-request and can't easily become
- * async without restructuring Express's middleware chain). Delegates to
- * the real audit repo — failures are caught and logged to stderr rather
- * than thrown, since a logging failure must never block the request it's
- * observing.
+ * Logs a high-integrity security audit event in db.json
  */
 export function logSecurityEvent(
   userId: string | undefined,
@@ -26,11 +23,33 @@ export function logSecurityEvent(
   event: string,
   details: string
 ): void {
-  import('./db/index.ts').then(({ auditRepo }) => {
-    auditRepo.logSecurityEvent(userId, ipAddress, event, details).catch((err) => {
-      console.error('[AUDIT] Failed to write security event', { event, err });
-    });
-  });
+  try {
+    const currentDb = loadDB() as any;
+    if (!currentDb.audit_logs) {
+      currentDb.audit_logs = [];
+    }
+    
+    const newLog: AuditLog = {
+      id: 'log_' + Math.random().toString(36).substr(2, 9),
+      user_id: userId,
+      ip_address: ipAddress,
+      event,
+      details,
+      created_at: new Date().toISOString()
+    };
+
+    currentDb.audit_logs.push(newLog);
+
+    // Limit log size to 500 records to prevent storage depletion (DoS / Resource Abuse)
+    if (currentDb.audit_logs.length > 500) {
+      currentDb.audit_logs = currentDb.audit_logs.slice(-500);
+    }
+
+    saveDB();
+    console.log(`[AUDIT SECURE EVENT] [${event}] user: ${userId || 'guest'} ip: ${ipAddress || 'unknown'} - ${details}`);
+  } catch (error) {
+    console.error('Failed to write security event to audit logs:', error);
+  }
 }
 
 /**

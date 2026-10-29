@@ -22,24 +22,16 @@ export class APIError extends Error {
 /**
  * Robust Centralized HTTP Client for enterprise service synchronization.
  */
+import { getAuthHeaders, saveAuthSession, authFetch } from './authStorage';
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
     retries = 2
   ): Promise<T> {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    const config = {
-      ...options,
-      headers,
-    };
-
     try {
-      const response = await fetch(endpoint, config);
+      const response = await authFetch(endpoint, options);
 
       if (!response.ok) {
         let errorData: any = {};
@@ -62,7 +54,17 @@ class ApiClient {
         return {} as T;
       }
 
-      return (await response.json()) as T;
+      const data = (await response.json()) as any;
+      if (data && typeof data === 'object') {
+        const token = data.token || data.sessionId;
+        const user = data.user;
+        const profile = data.profile;
+        if (token || user) {
+          saveAuthSession(token, user, profile);
+        }
+      }
+
+      return data as T;
     } catch (error: any) {
       if (retries > 0 && !(error instanceof APIError)) {
         console.warn(`API Request failed. Retrying... (${retries} attempts left)`);

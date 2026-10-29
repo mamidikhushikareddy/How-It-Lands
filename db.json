@@ -1,0 +1,1283 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "name": "kia",
+      "email": "kiaria2514@gmail.com",
+      "plan": "pro",
+      "role": "admin",
+      "created_at": "2026-07-05T13:35:43.497Z",
+      "onboarding_completed": true,
+      "usage_count_month": 8,
+      "billing_customer_id": "cus_H123456789",
+      "billing_status": "active",
+      "email_verified": true,
+      "status": "active",
+      "failed_login_attempts": 0,
+      "locked_until": null,
+      "recent_passwords": [],
+      "oauth_provider": null,
+      "oauth_id": null,
+      "salt": "64b2bbf5be3f43881aaf92b31336cc5f",
+      "password_hash": "0d35380a9a4a6a425a27e00c90242328954e810206679a2aab831d5e84cd10999739d7d6c60182b923e3429075efb001a217b201af11d09c578e9b9143d14b26"
+    },
+    {
+      "id": "u_admin",
+      "name": "How It Lands Admin",
+      "email": "admin@howitlands.com",
+      "plan": "plus",
+      "role": "admin",
+      "created_at": "2026-07-05T13:35:43.497Z",
+      "onboarding_completed": true,
+      "usage_count_month": 25,
+      "billing_customer_id": "cus_Admin999",
+      "billing_status": "active",
+      "email_verified": true,
+      "status": "active",
+      "failed_login_attempts": 0,
+      "locked_until": null,
+      "recent_passwords": [],
+      "oauth_provider": null,
+      "oauth_id": null
+    }
+  ],
+  "user_profiles": [
+    {
+      "user_id": "u1",
+      "communication_style": "apologetic",
+      "overdo_patterns": [
+        "overexplain",
+        "apologize too much"
+      ],
+      "preferred_tone": "kind but direct",
+      "preserve_voice": true,
+      "favorite_phrases": [
+        "Thanks for understanding",
+        "I take full responsibility"
+      ],
+      "avoided_phrases": [
+        "just checking in",
+        "sorry to bother you",
+        "no worries if not"
+      ],
+      "default_scenario": "general",
+      "notes": "Trying to be firmer in business negotiations."
+    }
+  ],
+  "analyses": [
+    {
+      "id": "a_0qnk6rzke",
+      "user_id": "u1",
+      "title": "CLIENT-MONEY Draft: \"Hi sorry to bug you again, I k...\"",
+      "original_message": "Hi sorry to bug you again, I know you are so busy! Just checking in on invoice 42 to see if there is any chance you got a free second to look at it? No rush at all, sorry to be a nuisance!",
+      "scenario": "client-money",
+      "relationship_context": "client",
+      "user_goal": "ask for money / payment",
+      "extra_context": "",
+      "tone_settings": {
+        "warmth": 50,
+        "directness": 50,
+        "softness": 50,
+        "confidence": 50,
+        "formality": 50,
+        "emotional_openness": 50
+      },
+      "output_json": {
+        "summary": {
+          "overall_read": "This draft is highly apologetic and submissive, framing a standard business transaction—getting paid for completed work—as an annoying intrusion. By repeatedly apologizing and telling the client there is 'no rush,' the sender may inadvertently signal that payment is optional or low priority, which could invite further delays. Note: This analysis provides communication guidance, not legal, financial, or crisis advice.",
+          "landing_status": "poor",
+          "top_risks": [
+            "Subservient positioning that invites the client to deprioritize the payment.",
+            "Undermining professional value by apologizing twice in a short message.",
+            "Mixed messaging by asking for an update while explicitly stating 'no rush at all'."
+          ],
+          "top_strengths": [
+            "Clear identification of the specific invoice number (Invoice 42).",
+            "An undeniably polite and non-confrontational attitude."
+          ],
+          "recommended_move": "Rewrite completely"
+        },
+        "scores": [
+          {
+            "dimension": "Clarity",
+            "score": 75,
+            "explanation": "The recipient knows you are asking about Invoice 42, but the call to action is buried under layers of apologies."
+          },
+          {
+            "dimension": "Warmth",
+            "score": 80,
+            "explanation": "Extremely friendly, though it crosses the line from warm into people-pleasing."
+          },
+          {
+            "dimension": "Confidence",
+            "score": 20,
+            "explanation": "The language is highly tentative, signaling a lack of confidence in your right to be paid."
+          },
+          {
+            "dimension": "Neediness Risk",
+            "score": 85,
+            "explanation": "The repeated apologies ('sorry to bug you', 'sorry to be a nuisance') may project anxiety or desperation."
+          },
+          {
+            "dimension": "Rudeness Risk",
+            "score": 5,
+            "explanation": "There is zero risk of this being perceived as rude; if anything, it is overly deferential."
+          },
+          {
+            "dimension": "Passive Aggression Risk",
+            "score": 15,
+            "explanation": "Unlikely to be read as passive-aggressive, though some clients might find the extreme self-deprecation slightly awkward."
+          },
+          {
+            "dimension": "Manipulation Risk",
+            "score": 0,
+            "explanation": "The message is transparently anxious rather than manipulative."
+          },
+          {
+            "dimension": "Overexplaining Risk",
+            "score": 60,
+            "explanation": "While short, it spends too many words justifying why you are reaching out."
+          }
+        ],
+        "how_it_may_be_read": {
+          "emotional_impression": "The client may feel a slight sense of guilt or awkwardness due to the heavy self-deprecation, or they may feel a sense of relief that they can continue to delay payment without consequence.",
+          "subtext": "Between the lines, this message says: 'I am uncomfortable asking for my money, my time is less valuable than yours, and you can pay me whenever it is convenient for you.'",
+          "confusing_points": "The phrase 'no rush at all' directly contradicts the act of sending a follow-up message, which may leave the client unsure of how urgently they actually need to respond.",
+          "unintentional_signals": "This broadcasts a lack of business maturity or financial security, suggesting that you do not view your services as a professional priority.",
+          "invited_responses": "This pattern frequently invites silence, a brief 'Thanks, I'll look later' with no commitment, or a prolonged delay in processing the payment."
+        },
+        "whats_working": [
+          "Specifying 'invoice 42' prevents any confusion about which account or project is being referenced."
+        ],
+        "whats_risky": [
+          "Starting with 'sorry to bug you' immediately lowers your professional standing before the client even reads the core request.",
+          "Using 'sorry to be a nuisance' reinforces the idea that expecting timely payment is an unreasonable burden rather than a standard business agreement.",
+          "Asking if they have a 'free second' minimizes the importance of your invoice, framing it as a trivial favor rather than a contractually obligated transaction."
+        ],
+        "line_by_line": [
+          {
+            "line": "Hi sorry to bug you again, I know you are so busy!",
+            "tag": "Soft filler",
+            "type": "risk",
+            "feedback": "This opening immediately establishes a low-status dynamic. You are not 'bugging' them; you are managing a standard business transaction.",
+            "suggestion": "Start with a warm, direct greeting instead."
+          },
+          {
+            "line": "Just checking in on invoice 42 to see if there is any chance you got a free second to look at it?",
+            "tag": "Tentative phrasing",
+            "type": "risk",
+            "feedback": "Phrases like 'just checking in' and 'any chance you got a free second' dilute the professional necessity of the payment.",
+            "suggestion": "Ask directly about the status of the invoice."
+          },
+          {
+            "line": "No rush at all, sorry to be a nuisance!",
+            "tag": "Over-apologizing",
+            "type": "risk",
+            "feedback": "Telling a client 'no rush' on an outstanding invoice actively works against your goal of getting paid. Apologizing for being a 'nuisance' is highly self-deprecating.",
+            "suggestion": "Omit this entirely. Assume they want to settle their accounts professionally."
+          }
+        ],
+        "rewrites": [
+          {
+            "type": "kinder",
+            "label": "Warmer & Kinder",
+            "description": "Maintains a friendly, collaborative tone without sacrificing your professional boundaries or apologizing for asking for payment.",
+            "content": "Hi [Name], I hope you're having a great week! I'm just following up on Invoice 42. Please let me know if you need any details re-sent or if there's anything I can clarify to help get this processed. Thanks so much!"
+          },
+          {
+            "type": "confident",
+            "label": "More Confident & Firm",
+            "description": "Removes all defensive cushions and hesitations, presenting the request as a routine, professional matter.",
+            "content": "Hi [Name], I'm following up on Invoice 42, which was sent on [Date]. Could you please let me know when this is scheduled for payment? Let me know if you need me to resend the invoice details. Thank you."
+          },
+          {
+            "type": "shorter",
+            "label": "Shorter & Cleaner",
+            "description": "Stripped down to the absolute essentials to minimize any room for misinterpretation or delay.",
+            "content": "Hi [Name], just following up on Invoice 42. Could you let me know when we can expect payment? Thanks!"
+          },
+          {
+            "type": "best_strategic",
+            "label": "Best Strategic Version",
+            "description": "Optimally balances warmth and directness, aligning perfectly with a balanced tone profile that is polite but firm.",
+            "content": "Hi [Name], I hope you're doing well. I'm following up on Invoice 42 to see if it has been approved for payment. Could you please let me know when it's scheduled to be processed? Let me know if you need any additional information from my end. Thanks!"
+          }
+        ],
+        "follow_ups": [
+          {
+            "condition": "If they ignore this follow-up for more than 3 business days",
+            "message": "Hi [Name], following up on my previous note regarding Invoice 42. Please let me know if there are any issues holding up payment so we can get this resolved. Thank you."
+          },
+          {
+            "condition": "If they reply saying they are too busy or need more time",
+            "message": "Thanks for the update, [Name]. I understand things are busy. Could you let me know a specific date next week when we can expect this to be processed? I appreciate your help."
+          }
+        ],
+        "send_recommendation": {
+          "action": "Edit before sending",
+          "time_advice": "Send during mid-morning business hours (Tuesday through Thursday are ideal) so it lands when they are actively managing administrative tasks.",
+          "delivery_advice": "Keep this to email rather than text or phone, as email provides a clear paper trail for financial transactions and allows the client to forward it to their accounts payable department easily."
+        },
+        "tags": [
+          "client-money",
+          "client",
+          "payment-request"
+        ]
+      },
+      "created_at": "2026-07-05T13:49:50.658Z",
+      "updated_at": "2026-07-05T13:49:50.658Z",
+      "saved": false,
+      "archived": false
+    },
+    {
+      "id": "a_54cjc608c",
+      "user_id": "u1",
+      "title": "WORKPLACE Draft: \"Sorry, I am just following up ...\"",
+      "original_message": "Sorry, I am just following up on our project milestones.",
+      "scenario": "workplace",
+      "relationship_context": "coworker",
+      "user_goal": "sound more confident",
+      "extra_context": "",
+      "tone_settings": {
+        "warmth": 50,
+        "directness": 50,
+        "softness": 50,
+        "confidence": 70,
+        "formality": 50,
+        "emotional_openness": 40
+      },
+      "output_json": {
+        "summary": {
+          "overall_read": "ఈ సందేశం స్పష్టమైన ఉద్దేశాన్ని కలిగి ఉంది, కానీ అనవసరమైన సంశయం లేదా అధిక సమర్థనల వల్ల మీ విశ్వాసం తగ్గే అవకాశం ఉంది.",
+          "landing_status": "risky",
+          "top_risks": [
+            "అధిక క్షమాపణలు చెప్పడం వల్ల మీ నిర్ణయం బలహీనంగా అనిపిస్తుంది.",
+            "ఎక్కువ వివరణలు ఇవ్వడం వల్ల ఎదుటివారు దీనిపై చర్చించడానికి ఆస్కారం ఉంటుంది."
+          ],
+          "top_strengths": [
+            "మౌలిక సంభాషణలో సహజమైన గౌరవం మరియు సహానుభూతి ఉన్నాయి.",
+            "లక్ష్యం స్పష్టంగా ఉంది."
+          ],
+          "recommended_move": "సందేహాస్పద పదాలను తొలగించి, మీ సరిహద్దును స్పష్టంగా మరియు గౌరవప్రదంగా తెలియజేయండి."
+        },
+        "scores": [
+          {
+            "dimension": "Clarity",
+            "score": 72,
+            "explanation": "మౌలిక సంభాషణలో సహజమైన గౌరవం మరియు సహానుభూతి ఉన్నాయి."
+          },
+          {
+            "dimension": "Warmth",
+            "score": 68,
+            "explanation": "Friendly and relational."
+          },
+          {
+            "dimension": "Confidence",
+            "score": 58,
+            "explanation": "అధిక క్షమాపణలు చెప్పడం వల్ల మీ నిర్ణయం బలహీనంగా అనిపిస్తుంది."
+          },
+          {
+            "dimension": "Risk",
+            "score": 42,
+            "explanation": "Low-to-moderate risk of social friction."
+          }
+        ],
+        "how_it_may_be_read": {
+          "emotional_impression": "కొంత అసహనంగా లేదా సంకోచంతో కూడినదిగా అనిపిస్తుంది.",
+          "subtext": "\"నేను ఈ నిర్ణయం తీసుకున్నాను, కానీ మీరు ఒప్పుకుంటారో లేదో అని భయపడుతున్నాను.\"",
+          "confusing_points": "సమర్థనల మధ్య అసలు సందేశం కొంత మరుగున పడింది.",
+          "unintentional_signals": "ఎదుటివారు ఇంకా చర్చించడానికి అవకాశం ఉందని భావించవచ్చు.",
+          "invited_responses": "వారు రాజీ పడటానికి లేదా మరింత సమయం కోరడానికి ప్రయత్నించవచ్చు."
+        },
+        "whats_working": [
+          "మౌలిక సంభాషణలో సహజమైన గౌరవం మరియు సహానుభూతి ఉన్నాయి.",
+          "లక్ష్యం స్పష్టంగా ఉంది."
+        ],
+        "whats_risky": [
+          "అధిక క్షమాపణలు చెప్పడం వల్ల మీ నిర్ణయం బలహీనంగా అనిపిస్తుంది.",
+          "ఎక్కువ వివరణలు ఇవ్వడం వల్ల ఎదుటివారు దీనిపై చర్చించడానికి ఆస్కారం ఉంటుంది."
+        ],
+        "line_by_line": [
+          {
+            "line": "Sorry, I am just following up on our project milestones",
+            "tag": "Soft Filler",
+            "type": "risk",
+            "feedback": "ఈ వాక్యం అనవసర సంకోచాన్ని సూచిస్తుంది.",
+            "suggestion": "సూటిగా మరియు దృఢంగా చెప్పండి."
+          }
+        ],
+        "rewrites": [
+          {
+            "type": "kinder",
+            "content": "నమస్కారం, మీరు అందించిన మద్దతుకు ధన్యవాదాలు. ప్రస్తుతం నా సమయ పరిమితుల వల్ల నేను దీనిని అంగీకరించలేకపోతున్నాను. మీకు అంతా మంచి జరగాలని కోరుకుంటున్నాను.",
+            "label": "Kinder & Softer",
+            "description": "Prioritizes warmth and relationship preservation."
+          },
+          {
+            "type": "confident",
+            "content": "నన్ను సంప్రదించినందుకు ధన్యవాదాలు. ప్రస్తుత ప్రాజెక్టుల వల్ల నేను దీనిపై పనిచేయలేను. భవిష్యత్తులో ఖచ్చితంగా కలిసి పనిచేద్దాం.",
+            "label": "Firm & Confident",
+            "description": "Assertive, authoritative boundary with zero hedging."
+          },
+          {
+            "type": "shorter",
+            "content": "ధన్యవాదాలు, కానీ ప్రస్తుతానికి నేను దీనిని పూర్తి చేయలేను. శుభాకాంక్షలు!",
+            "label": "Short & Clean",
+            "description": "Maximum brevity and economy of words."
+          },
+          {
+            "type": "best_strategic",
+            "content": "నన్ను సంప్రదించినందుకు చాలా ధన్యవాదాలు. మీ ప్రాజెక్ట్ అద్భుతంగా ఉంది. ప్రస్తుత సమయ పరిమితుల వల్ల నేను ఇప్పుడు సహకరించలేకపోతున్నాను.",
+            "label": "Best Strategic Version",
+            "description": "Optimal balance of professional respect and boundary firmness."
+          }
+        ],
+        "follow_ups": [
+          {
+            "condition": "వారు పునఃపరిశీలించమని కోరితే",
+            "message": "నా నిర్ణయాన్ని గౌరవించినందుకు ధన్యవాదాలు, కానీ ప్రస్తుత పరిస్థితులలో ఇది సాధ్యం కాదు."
+          },
+          {
+            "condition": "వారు సహకరించినట్లయితే",
+            "message": "మీ అర్థం చేసుకునే గుణానికి మరియు సహకారానికి ధన్యవాదాలు."
+          }
+        ],
+        "send_recommendation": {
+          "action": "సూటిగా మరియు గౌరవంగా పంపండి",
+          "time": "పని వేళల్లో ఉదయం 10:00 నుండి సాయంత్రం 4:00 మధ్య పంపడం శ్రేయస్కరం",
+          "delivery": "ఒకే సంపూర్ణ సందేశంగా పంపండి"
+        },
+        "tags": [
+          "Strategic Boundary",
+          "Telugu",
+          "workplace"
+        ],
+        "is_fallback": true,
+        "api_key_status": "leaked",
+        "fallback_reason": "Your Gemini API key was reported as leaked and blocked by Google security. Please generate a new API key in Google AI Studio and update it in Settings > Secrets."
+      },
+      "target_language": "Telugu",
+      "created_at": "2026-10-28T11:50:19.306Z",
+      "updated_at": "2026-10-28T11:50:19.558Z",
+      "saved": false,
+      "archived": false
+    },
+    {
+      "id": "a_p6aidzvli",
+      "user_id": "u1",
+      "title": "CLIENT-MONEY Draft: \"Please send over the signed co...\"",
+      "original_message": "Please send over the signed contract by EOD.",
+      "scenario": "client-money",
+      "relationship_context": "client",
+      "user_goal": "be firm without sounding rude",
+      "extra_context": "",
+      "tone_settings": {
+        "warmth": 50,
+        "directness": 60,
+        "softness": 40,
+        "confidence": 70,
+        "formality": 60,
+        "emotional_openness": 30
+      },
+      "output_json": {
+        "summary": {
+          "overall_read": "यह संदेश स्पष्ट है, लेकिन अत्यधिक औपचारिकता या संकोच के कारण यह कमजोर लग सकता है।",
+          "landing_status": "risky",
+          "top_risks": [
+            "अत्यधिक क्षमाप्रार्थी होना आपकी स्थिति को कमजोर दिखाता है।",
+            "ज्यादा स्पष्टीकरण देने से सामने वाले को बहस का मौका मिलता है।"
+          ],
+          "top_strengths": [
+            "सहानुभूति और शिष्टाचार की अच्छी उपस्थिति है।",
+            "मूल बात का इरादा सही है।"
+          ],
+          "recommended_move": "सटीक शब्दों का उपयोग करें और बिना झिझक के अपनी बात स्पष्ट रखें।"
+        },
+        "scores": [
+          {
+            "dimension": "Clarity",
+            "score": 72,
+            "explanation": "सहानुभूति और शिष्टाचार की अच्छी उपस्थिति है।"
+          },
+          {
+            "dimension": "Warmth",
+            "score": 68,
+            "explanation": "Friendly and relational."
+          },
+          {
+            "dimension": "Confidence",
+            "score": 58,
+            "explanation": "अत्यधिक क्षमाप्रार्थी होना आपकी स्थिति को कमजोर दिखाता है।"
+          },
+          {
+            "dimension": "Risk",
+            "score": 42,
+            "explanation": "Low-to-moderate risk of social friction."
+          }
+        ],
+        "how_it_may_be_read": {
+          "emotional_impression": "संकोची या असहज महसूस हो सकता है।",
+          "subtext": "\"मैं ना कहना चाहता हूँ, लेकिन सामने वाले की प्रतिक्रिया से डर रहा हूँ।\"",
+          "confusing_points": "स्पष्टीकरण के कारण मुख्य बिंदु दब सकता है।",
+          "unintentional_signals": "निर्णय पर अभी भी बातचीत संभव है।",
+          "invited_responses": "सामने वाला व्यक्ति आपको मनाने की कोशिश कर सकता है।"
+        },
+        "whats_working": [
+          "सहानुभूति और शिष्टाचार की अच्छी उपस्थिति है।",
+          "मूल बात का इरादा सही है।"
+        ],
+        "whats_risky": [
+          "अत्यधिक क्षमाप्रार्थी होना आपकी स्थिति को कमजोर दिखाता है।",
+          "ज्यादा स्पष्टीकरण देने से सामने वाले को बहस का मौका मिलता है।"
+        ],
+        "line_by_line": [
+          {
+            "line": "Please send over the signed contract by EOD",
+            "tag": "Soft Filler",
+            "type": "risk",
+            "feedback": "यह वाक्य अनिश्चितता और झिझक दर्शाता है।",
+            "suggestion": "अनावश्यक औपचारिकता हटाकर बात सीधे कहें।"
+          }
+        ],
+        "rewrites": [
+          {
+            "type": "kinder",
+            "content": "नमस्ते, आपके प्रस्ताव के लिए बहुत धन्यवाद। मौजूदा व्यस्तता के कारण मैं फिलहाल इसके लिए समय नहीं निकाल पाऊँगा। आपके सहयोग की सराहना करता हूँ।",
+            "label": "Kinder & Softer",
+            "description": "Prioritizes warmth and relationship preservation."
+          },
+          {
+            "type": "confident",
+            "content": "नमस्ते, संपर्क करने के लिए धन्यवाद। मेरी वर्तमान प्राथमिकताओं के कारण मैं इस कार्य को आगे नहीं बढ़ा पाऊँगा। भविष्य के अवसरों के लिए शुभकामनाएँ।",
+            "label": "Firm & Confident",
+            "description": "Assertive, authoritative boundary with zero hedging."
+          },
+          {
+            "type": "shorter",
+            "content": "नमस्ते, आमंत्रण के लिए धन्यवाद, लेकिन मैं इस बार शामिल नहीं हो पाऊँगा।",
+            "label": "Short & Clean",
+            "description": "Maximum brevity and economy of words."
+          },
+          {
+            "type": "best_strategic",
+            "content": "नमस्ते, मैं सीधे तौर पर साझा करना चाहता हूँ कि मेरे वर्तमान शेड्यूल के अनुसार मैं इसे स्वीकार करने में असमर्थ हूँ। आपकी समझदारी के लिए धन्यवाद।",
+            "label": "Best Strategic Version",
+            "description": "Optimal balance of professional respect and boundary firmness."
+          }
+        ],
+        "follow_ups": [
+          {
+            "condition": "यदि वे पुनः विचार करने का अनुरोध करते हैं",
+            "message": "मैं आपकी बात समझता हूँ, लेकिन मेरी वर्तमान प्राथमिकताएँ तय हैं।"
+          },
+          {
+            "condition": "यदि वे आसानी से मान जाते हैं",
+            "message": "आपकी समझ और सहयोग के लिए बहुत-बहुत धन्यवाद।"
+          }
+        ],
+        "send_recommendation": {
+          "action": "स्पष्ट और दृढ़ रूप से भेजें",
+          "time": "कार्यदिवस में सुबह 10:00 से शाम 4:00 के बीच",
+          "delivery": "एक संपूर्ण संदेश के रूप में भेजें"
+        },
+        "tags": [
+          "Strategic Boundary",
+          "Hindi",
+          "client-money"
+        ],
+        "is_fallback": true,
+        "api_key_status": "leaked",
+        "fallback_reason": "Your Gemini API key was reported as leaked and blocked by Google security. Please generate a new API key in Google AI Studio and update it in Settings > Secrets."
+      },
+      "target_language": "Hindi",
+      "created_at": "2026-10-28T11:50:20.367Z",
+      "updated_at": "2026-10-28T11:50:20.367Z",
+      "saved": false,
+      "archived": false
+    },
+    {
+      "id": "a_g0rs9hwek",
+      "user_id": "u1",
+      "title": "WORKPLACE Draft: \"I need to reschedule our meeti...\"",
+      "original_message": "I need to reschedule our meeting to next week.",
+      "scenario": "workplace",
+      "relationship_context": "client",
+      "user_goal": "be honest but kind",
+      "extra_context": "",
+      "tone_settings": {
+        "warmth": 50,
+        "directness": 50,
+        "softness": 50,
+        "confidence": 50,
+        "formality": 50,
+        "emotional_openness": 50
+      },
+      "output_json": {
+        "summary": {
+          "overall_read": "இந்த செய்தி உங்கள் நிலைப்பாட்டை தெளிவாக கூறுகிறது, ஆனால் அதிகப்படியான விளக்கம் உங்கள் அதிகாரத்தை குறைக்க வாய்ப்புள்ளது.",
+          "landing_status": "risky",
+          "top_risks": [
+            "அதிக மன்னிப்பு கேட்பது உங்கள் நிலையை பலவீனப்படுத்தும்.",
+            "நீண்ட விளக்கம் தேவையற்ற விவாதங்களை உருவாக்கும்."
+          ],
+          "top_strengths": [
+            "நேர்மையான அக்கறை மற்றும் மரியாதை உள்ளது.",
+            "நோக்கம் உறுதியானது."
+          ],
+          "recommended_move": "தயக்கமின்றி உங்கள் முடிவை மரியாதையுடன் நேரடியாக வெளிப்படுத்துங்கள்."
+        },
+        "scores": [
+          {
+            "dimension": "Clarity",
+            "score": 72,
+            "explanation": "நேர்மையான அக்கறை மற்றும் மரியாதை உள்ளது."
+          },
+          {
+            "dimension": "Warmth",
+            "score": 68,
+            "explanation": "Friendly and relational."
+          },
+          {
+            "dimension": "Confidence",
+            "score": 58,
+            "explanation": "அதிக மன்னிப்பு கேட்பது உங்கள் நிலையை பலவீனப்படுத்தும்."
+          },
+          {
+            "dimension": "Risk",
+            "score": 42,
+            "explanation": "Low-to-moderate risk of social friction."
+          }
+        ],
+        "how_it_may_be_read": {
+          "emotional_impression": "தயக்கத்துடன் இருப்பதாக உணரப்படலாம்.",
+          "subtext": "\"நான் இதை செய்ய விரும்பவில்லை, ஆனால் நீங்கள் வருத்தப்படுவீர்களா என்று அஞ்சுகிறேன்.\"",
+          "confusing_points": "விளக்கங்களின் நடுவே முக்கிய செய்தி மறைந்துவிடலாம்.",
+          "unintentional_signals": "இன்னும் சமரசம் செய்து கொள்ளலாம் என்ற எண்ணம் வரலாம்.",
+          "invited_responses": "அவர்கள் தங்களை மறுபரிசீலனை செய்ய வலியுறுத்தலாம்."
+        },
+        "whats_working": [
+          "நேர்மையான அக்கறை மற்றும் மரியாதை உள்ளது.",
+          "நோக்கம் உறுதியானது."
+        ],
+        "whats_risky": [
+          "அதிக மன்னிப்பு கேட்பது உங்கள் நிலையை பலவீனப்படுத்தும்.",
+          "நீண்ட விளக்கம் தேவையற்ற விவாதங்களை உருவாக்கும்."
+        ],
+        "line_by_line": [
+          {
+            "line": "I need to reschedule our meeting to next week",
+            "tag": "Soft Filler",
+            "type": "risk",
+            "feedback": "இந்த வரிகள் தேவையற்ற தயக்கத்தை காட்டுகின்றன.",
+            "suggestion": "நேரடியாக மற்றும் தெளிவாக கூறுங்கள்."
+          }
+        ],
+        "rewrites": [
+          {
+            "type": "kinder",
+            "content": "வணக்கம், உங்கள் அன்பான ஆதரவிற்கு நன்றி. எனது தற்போதைய பணிச்சுமை காரணமாக என்னால் இதில் பங்கேற்க இயலவில்லை. வாழ்த்துகள்!",
+            "label": "Kinder & Softer",
+            "description": "Prioritizes warmth and relationship preservation."
+          },
+          {
+            "type": "confident",
+            "content": "வணக்கம், அழைப்பிற்கு நன்றி. எனது தற்போதைய கடமைகள் காரணமாக என்னால் இதை ஏற்க இயலவில்லை. புரிதலுக்கு நன்றி.",
+            "label": "Firm & Confident",
+            "description": "Assertive, authoritative boundary with zero hedging."
+          },
+          {
+            "type": "shorter",
+            "content": "நன்றி, ஆனால் தற்போதைய சூழலில் என்னால் வர இயலாது. வாழ்த்துகள்!",
+            "label": "Short & Clean",
+            "description": "Maximum brevity and economy of words."
+          },
+          {
+            "type": "best_strategic",
+            "content": "வணக்கம், எனது தற்போதைய நேர வரம்புகள் காரணமாக இந்த திட்டத்தை என்னால் ஏற்க இயலவில்லை என்பதை வெளிப்படையாக தெரிவிக்கிறேன்.",
+            "label": "Best Strategic Version",
+            "description": "Optimal balance of professional respect and boundary firmness."
+          }
+        ],
+        "follow_ups": [
+          {
+            "condition": "அவர்கள் வற்புறுத்தினால்",
+            "message": "உங்கள் நிலைமையை நான் புரிந்துகொள்கிறேன், ஆனால் எனது முடிவு இறுதியானது."
+          },
+          {
+            "condition": "அவர்கள் ஏற்றுக்கொண்டால்",
+            "message": "உங்கள் புரிதலுக்கும் ஆதரவிற்கும் மிக்க நன்றி."
+          }
+        ],
+        "send_recommendation": {
+          "action": "நேரடியாகவும் மரியாதையாகவும் அனுப்பவும்",
+          "time": "காலை 10:00 முதல் மாலை 4:00 வரை",
+          "delivery": "ஒரே செய்தியாக அனுப்பவும்"
+        },
+        "tags": [
+          "Strategic Boundary",
+          "Tamil",
+          "workplace"
+        ],
+        "is_fallback": true,
+        "api_key_status": "leaked",
+        "fallback_reason": "Your Gemini API key was reported as leaked and blocked by Google security. Please generate a new API key in Google AI Studio and update it in Settings > Secrets."
+      },
+      "target_language": "Tamil",
+      "created_at": "2026-10-28T11:50:20.642Z",
+      "updated_at": "2026-10-28T11:50:20.642Z",
+      "saved": false,
+      "archived": false
+    }
+  ],
+  "templates": [
+    {
+      "id": "t_dating_rejection",
+      "title": "Polite Romantic Rejection",
+      "scenario": "breakup",
+      "category": "Relationship / Dating",
+      "draft": "Hey so sorry but I have been super stressed and busy at work and my dog is having health issues so I can't really date right now. You are literally perfect and amazing and I hope we can still be friends though because you are awesome!!",
+      "goal": "Be honest but kind"
+    },
+    {
+      "id": "t_invoice_reminder",
+      "title": "Urgent Past-Due Payment Ask",
+      "scenario": "client-money",
+      "category": "Freelance & Business",
+      "draft": "Hi sorry to bug you again, I know you are so busy! Just checking in on invoice 42 to see if there is any chance you got a free second to look at it? No rush at all, sorry to be a nuisance!",
+      "goal": "Ask for money / payment"
+    },
+    {
+      "id": "t_workplace_boundary",
+      "title": "Workload Pushback",
+      "scenario": "workplace",
+      "category": "Professional Work",
+      "draft": "I am so sorry but my plates are overflowing and I am literally working 12 hours a day and drowning. Can you please give this assignment to someone else or push the deadline back because I am going to lose my mind.",
+      "goal": "Set a boundary"
+    },
+    {
+      "id": "t_apology_deadline",
+      "title": "Missed Deadline Accountability",
+      "scenario": "apology",
+      "category": "Professional Work",
+      "draft": "I am so incredibly sorry for missing the deadline! I had a massive headache and my internet went out, and my alarm didn't go off. I feel so unprofessional and terrible, please don't hate me! I will finish it right now!",
+      "goal": "Apologize sincerely"
+    },
+    {
+      "id": "t_remote_work",
+      "title": "Asking to Work Remotely",
+      "scenario": "remote-work",
+      "category": "Professional Work",
+      "draft": "Hi, I really hate the office and traffic. Can I just work from home permanently? Everyone else does it sometimes and I would be way happier.",
+      "goal": "Frame as a productivity and focus benefit"
+    },
+    {
+      "id": "t_out_of_scope",
+      "title": "Out of Scope Freelance Task",
+      "scenario": "client-money",
+      "category": "Freelance & Business",
+      "draft": "Hi, that extra page you want isn't in our contract but I guess I can do it for free if you really need it, just don't make it a habit.",
+      "goal": "Politely decline or request additional compensation"
+    },
+    {
+      "id": "t_decline_social",
+      "title": "Declining a Social Event",
+      "scenario": "boundaries",
+      "category": "Personal & Social",
+      "draft": "Hey, I am so sorry but I have had such a long week and I am extremely tired and my social battery is dead. I'm just going to stay home and watch Netflix. Sorry to flake!",
+      "goal": "Set a firm personal boundary without overexplaining"
+    },
+    {
+      "id": "t_salary_raise",
+      "title": "Asking for a Pay Raise",
+      "scenario": "negotiation",
+      "category": "Professional Work",
+      "draft": "Hey, I was hoping we could talk about my salary. I've been working really hard and everything is super expensive now with inflation, so I really need more money.",
+      "goal": "State value-based achievements confidently"
+    },
+    {
+      "id": "t_roommate_rent",
+      "title": "Addressing Roommate Late Rent",
+      "scenario": "boundaries",
+      "category": "Personal & Social",
+      "draft": "Hey, sorry to bother you but is there any way you could pay your share of the rent soon? The landlord is going to get mad at me. Sorry to bring it up!",
+      "goal": "Firm and direct request for financial obligation"
+    },
+    {
+      "id": "t_meeting_cancel",
+      "title": "Canceling a Meeting Last Minute",
+      "scenario": "schedule",
+      "category": "Professional Work",
+      "draft": "Hi, so sorry for the super last minute cancellation but something urgent came up and I can't make our 2 PM call today. I'm really sorry to waste your time!",
+      "goal": "Professional, respectful rescheduling without apologizing excessively"
+    },
+    {
+      "id": "t_job_feedback",
+      "title": "Asking for Feedback on Job Application",
+      "scenario": "inquiry",
+      "category": "Professional Work",
+      "draft": "Hi, I applied for the role last month and haven't heard back. Did you guys choose someone else? Just let me know so I can stop waiting.",
+      "goal": "Confident and constructive follow-up"
+    },
+    {
+      "id": "t_friend_money",
+      "title": "Friend Borrowed Money Reminder",
+      "scenario": "friendship-money",
+      "category": "Personal & Social",
+      "draft": "Hey! Sorry to ask but remember that $50 you borrowed for dinner last month? No rush at all but if you have a second could you Venmo me? Sorry to be annoying!",
+      "goal": "Straightforward reminder without guilt or apologies"
+    },
+    {
+      "id": "t_unpaid_gig",
+      "title": "Saying No to Unpaid Gig",
+      "scenario": "boundaries",
+      "category": "Freelance & Business",
+      "draft": "Thanks for the invitation to speak at your conference! I usually get paid for this but since you don't have a budget, I guess I can do it for exposure.",
+      "goal": "Professional refusal based on standard speaking fee policy"
+    },
+    {
+      "id": "t_late_delivery",
+      "title": "Late Delivery Complaint to Vendor",
+      "scenario": "confrontation",
+      "category": "Freelance & Business",
+      "draft": "Hi, our project was supposed to be delivered yesterday and you missed it. This is really bad and now my client is yelling at me. When will you finish it?",
+      "goal": "Clear, non-emotional holding of accountability"
+    },
+    {
+      "id": "t_job_negotiation",
+      "title": "Negotiating a Job Offer",
+      "scenario": "negotiation",
+      "category": "Professional Work",
+      "draft": "Thank you for the offer! The base salary is a bit lower than I wanted, but if you can't increase it, I guess I will take it anyway.",
+      "goal": "Firm, polite counter-offer highlighting professional value"
+    },
+    {
+      "id": "t_decline_project",
+      "title": "Declining to Join a New Project",
+      "scenario": "boundaries",
+      "category": "Professional Work",
+      "draft": "Hi! I would love to help but my boss already gave me too much work and I am totally stressed out. I don't think I have the brain power for this right now.",
+      "goal": "Politely decline while referencing prior professional commitments"
+    },
+    {
+      "id": "t_micromanager",
+      "title": "Addressing a Micro-Managing Supervisor",
+      "scenario": "boundaries",
+      "category": "Professional Work",
+      "draft": "Hi, you are checking in on me every hour and it is really distracting. I know how to do my job, so please stop hovering over my desk.",
+      "goal": "Establish communication preferences and trust professionally"
+    },
+    {
+      "id": "t_rate_increase",
+      "title": "Raising Rates with Existing Client",
+      "scenario": "client-money",
+      "category": "Freelance & Business",
+      "draft": "Hi, I am so sorry but I have to raise my hourly rates next month because my bills went up. I hope you don't mind and can still afford to work with me!",
+      "goal": "Objective, confident rate adjustment notification"
+    },
+    {
+      "id": "t_second_date_rejection",
+      "title": "Rejecting a Second Date",
+      "scenario": "breakup",
+      "category": "Relationship / Dating",
+      "draft": "Hey, thank you for dinner! I had a nice time, but I'm just super busy with work right now and don't really have time to date anyone. Let's be friends!",
+      "goal": "Kind, direct, and unambiguous boundary"
+    },
+    {
+      "id": "t_slow_responder",
+      "title": "Slow Responder Follow-up",
+      "scenario": "inquiry",
+      "category": "Professional Work",
+      "draft": "Hi, sorry to double text! Just wanted to see if you got my email from last week? Let me know if you need me to resend it or if you are too busy.",
+      "goal": "Direct bump with zero passive-aggressive cushion"
+    },
+    {
+      "id": "t_quitting_notice",
+      "title": "Quitting a Job notice",
+      "scenario": "resignation",
+      "category": "Professional Work",
+      "draft": "Hi, I am writing to say I am quitting. I found a better job with higher pay. My last day is in two weeks. Thanks for everything I guess.",
+      "goal": "Courteous, professional notice of resignation"
+    },
+    {
+      "id": "t_unsolicited_advice",
+      "title": "Declining Unsolicited Advice",
+      "scenario": "boundaries",
+      "category": "Personal & Social",
+      "draft": "Hey, I appreciate you trying to help, but your advice on my career is really stressing me out. Can you please stop telling me what to do?",
+      "goal": "Soft but clear request for support instead of advice"
+    },
+    {
+      "id": "t_dispute_review",
+      "title": "Disputing Unfair Performance Review",
+      "scenario": "confrontation",
+      "category": "Professional Work",
+      "draft": "Hi, I saw my review and I think it is totally unfair and wrong. I worked harder than anyone else on the team and you just don't like me.",
+      "goal": "Objective request for a performance metrics review"
+    },
+    {
+      "id": "t_extension_request",
+      "title": "Asking for an Extension",
+      "scenario": "workplace",
+      "category": "Professional Work",
+      "draft": "Hi, I am so sorry but I totally underestimated how long this report would take and I won't have it ready by Friday. Is it okay if I send it next week?",
+      "goal": "Timely request with clear delivery timeline adjustment"
+    }
+  ],
+  "playbooks": [
+    {
+      "id": "pb_people_pleasing",
+      "title": "Breaking Free from People-Pleasing Language",
+      "category": "Interpersonal Psychology",
+      "tagline": "Stop auditing your calendar and apologizing for standard human constraints.",
+      "critique": "When we feel anxious or guilty, we automatically overexplain why we cannot attend, buy, or help. We detail calendar conflicts. This is a psychological signal of submission, which unintentionally trains the other party to negotiate your excuse.",
+      "remedy": "Use the \"Hard Boundary Frame.\" Your calendar fits inside a simple boundary. If you cannot do something, the reason is simply bandwidth or fit, which needs no further sub-excuses.",
+      "dos": [
+        "State constraints cleanly: \"I cannot commit to this right now.\"",
+        "Use \"No, but thank you for asking!\" with total directness.",
+        "Accept the micro-awkwardness of silence—do not send a second text."
+      ],
+      "donts": [
+        "Do not list personal medical, family, or task reasons for choosing no.",
+        "Never apologize for your lack of time or availability."
+      ],
+      "example_original": "Hey sorry! I literally wish I could come but I have 3 exams this week and my sister is visiting from out of town, and then I am super exhausted. If I get free later maybe I can stop by? Sorry to miss it!",
+      "example_rewritten": "Hey [Name], thank you so much for the invite! I am unable to make it this week, but I hope you guys have an incredible time. Let us definitely grab a coffee sometime soon."
+    }
+  ],
+  "blog_posts": [
+    {
+      "id": "b_double_text",
+      "title": "The Psychological Friction of the Double Text",
+      "slug": "psychology-of-double-text",
+      "excerpt": "Why sending a text explaining your previous unreplied text ruins relational power, and what to send instead.",
+      "content": "When we send a message and wait hours for a reply, anxiety triggers. We feel the urge to send a \"cushion text\" like *\"Sorry if that sounded weird!\"* or *\"No pressure by the way!\"*. Psychologically, this broadcasts low relational power and high anxiety. It forces the recipient to manage your reassurance. If they haven't replied, let it sit. The quietest communicator holds the boundaries. If you must bump, wait 72 hours and send a simple, confident, zero-explanation check-in.",
+      "author": "Pradeep",
+      "created_at": "2026-06-25",
+      "read_time": "4 min"
+    },
+    {
+      "id": "b_overexplaining",
+      "title": "How Overexplaining Invites Loophole Negotiations",
+      "slug": "how-overexplaining-invites-loopholes",
+      "excerpt": "Detailed excuses are a psychological signal of submission. Learn how to say no cleanly.",
+      "content": "When you tell a coworker or client: *\"I can't do this today because I have to take my cat to the vet and my internet is acting up,\"* they hear a negotiable excuse. They might reply: *\"Oh, can you do it from your phone or right after the vet?\"*. If you instead state: *\"I cannot take this on today, but I have bandwidth tomorrow afternoon,\"* there is zero room to negotiate. Keep excuses out of boundaries.",
+      "author": "Pradeep",
+      "created_at": "2026-06-24",
+      "read_time": "5 min"
+    }
+  ],
+  "testimonials": [
+    {
+      "id": "test_1",
+      "name": "Sarah Jenkins",
+      "role": "Freelance Brand Designer",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+      "text": "I used to lose thousands in delayed invoices because I felt too awkward chasing clients. How It Lands gave me a short, polite 2-sentence template. My client paid within 15 minutes of sending it!",
+      "stars": 5,
+      "scenarios_resolved": "Invoicing & boundaries"
+    },
+    {
+      "id": "test_2",
+      "name": "Alex Rivera",
+      "role": "Software Consultant",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      "text": "Negotiating an out-of-scope creep with my boss was incredibly stressful. The \"More Confident\" rewrite from this tool kept my boundary entirely polite but highly authoritative.",
+      "stars": 5,
+      "scenarios_resolved": "Salary & pushback"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "61e9af3973f4bef9e5c7e0b1b3e05881323b40d03a01cd18188f041917ebdded",
+      "user_id": "u1",
+      "expires_at": "2026-11-25T16:33:26.339Z",
+      "created_at": "2026-10-26T16:33:26.338Z"
+    },
+    {
+      "id": "e9c5f7c0752aa020744f5b1bcfbd54ff1dea58a383ae4ce6ea88ee61a378a58a",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:25:39.769Z",
+      "created_at": "2026-10-29T19:25:39.769Z"
+    },
+    {
+      "id": "7bcb19ef2814d894a6b74aaaafff6c1594211ead4eb822690beba5fd2af173a4",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:25:39.962Z",
+      "created_at": "2026-10-29T19:25:39.962Z"
+    },
+    {
+      "id": "84e849515ac66bc81c0f6cd97852a213c82ceb29e5762e29c354c509ce62187e",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:32:01.533Z",
+      "created_at": "2026-10-29T19:32:01.533Z"
+    },
+    {
+      "id": "8cae571b33e0e378a312492ce50dabd2e890836e0d4ca2f53db0ea15287dec27",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:32:01.861Z",
+      "created_at": "2026-10-29T19:32:01.861Z"
+    },
+    {
+      "id": "aaa92cb0ed7c1892d2221315a7f6582648d1017e5c48a46212f1e6e2098bebd1",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:32:02.101Z",
+      "created_at": "2026-10-29T19:32:02.101Z"
+    },
+    {
+      "id": "a878a24c4507162c70b7acf8a35644d70a6351047e726c9e1da90bdbe00ad31b",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:32:54.378Z",
+      "created_at": "2026-10-29T19:32:54.378Z"
+    },
+    {
+      "id": "cc6ba35c06b9c7832c79c4e6ee00c7430744b87d4b2ee6ac568aa18fe303bb8b",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:32:54.664Z",
+      "created_at": "2026-10-29T19:32:54.664Z"
+    },
+    {
+      "id": "4a4b24a29fbcd2d2d87c0879cfbbabc0deb3808a2681d8f9172caf924efa7675",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:32:55.048Z",
+      "created_at": "2026-10-29T19:32:55.048Z"
+    },
+    {
+      "id": "4751c7ecd711280f2c52dc9814ecbe844f281d53e7fc21b42a08386a061d95a1",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:33:23.821Z",
+      "created_at": "2026-10-29T19:33:23.821Z"
+    },
+    {
+      "id": "57059de7f7555382683c43eb52bb7608e1138d3f84de369c68835f276c24a5e4",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:33:24.135Z",
+      "created_at": "2026-10-29T19:33:24.135Z"
+    },
+    {
+      "id": "ae28b158d1dd04be036ad8f24770356d192074133243c154ea3e71bfee068b8a",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:33:24.411Z",
+      "created_at": "2026-10-29T19:33:24.411Z"
+    },
+    {
+      "id": "c31bae61757d6ca0f8986b5150d8a6e3b92410376307e04bbf5bf1fc06fd1984",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:33:24.667Z",
+      "created_at": "2026-10-29T19:33:24.667Z"
+    },
+    {
+      "id": "888c3bb98244ee890fd86e1a0a28e580f6ce6ee2be86960e0fb4d9e3cf4081a5",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:33:24.957Z",
+      "created_at": "2026-10-29T19:33:24.957Z"
+    },
+    {
+      "id": "8a3157b03bb7b44cfe78e7b95521368819cd43118528b3a880281eec3e13c4cf",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:44:32.923Z",
+      "created_at": "2026-10-29T19:44:32.924Z"
+    },
+    {
+      "id": "c2398c1632d4cc320fee83a63e5a39fa0cc4842913da1b05a6b4e0713cef32b7",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:44:38.650Z",
+      "created_at": "2026-10-29T19:44:38.650Z"
+    },
+    {
+      "id": "06c201c53585186422be37fcfcb81e361b01967c3f7de42b6295bdd639463164",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:44:38.974Z",
+      "created_at": "2026-10-29T19:44:38.974Z"
+    },
+    {
+      "id": "5b823cb4c17b90f8cab532fdaded1d2d767b8eccac33adf6f542faeab11627ab",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:44:38.983Z",
+      "created_at": "2026-10-29T19:44:38.983Z"
+    },
+    {
+      "id": "587395aa6da49908c29e5e27b699379b7d81416fa55ce27f2086b24113b207c9",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:44:38.988Z",
+      "created_at": "2026-10-29T19:44:38.988Z"
+    },
+    {
+      "id": "a5c06f1f624990089c590cc1ce717ee1fdbce437019d212b7b1d2a5fc1fe6bcb",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:44:38.994Z",
+      "created_at": "2026-10-29T19:44:38.994Z"
+    },
+    {
+      "id": "2aead78700b71718208f159574c9771b4044115bfde57adc17058f1224b82451",
+      "user_id": "u1",
+      "expires_at": "2026-10-30T19:45:53.644Z",
+      "created_at": "2026-10-29T19:45:53.644Z"
+    }
+  ],
+  "audit_logs": [
+    {
+      "id": "log_yd7zrfrch",
+      "user_id": "u1",
+      "ip_address": "127.0.0.1",
+      "event": "auth.login",
+      "details": "User logged in successfully: kiaria2514@gmail.com",
+      "created_at": "2026-07-05T13:39:19.818Z"
+    },
+    {
+      "id": "log_ohbhtshts",
+      "user_id": "u1",
+      "ip_address": "127.0.0.1",
+      "event": "account.update",
+      "details": "Updated account details: name=kia, email=kiaria2514@gmail.com",
+      "created_at": "2026-07-05T13:53:08.714Z"
+    },
+    {
+      "id": "log_mi3bif3lo",
+      "user_id": "u1",
+      "ip_address": "127.0.0.1",
+      "event": "auth.login_failed",
+      "details": "Incorrect password attempt for user: kiaria2514@gmail.com. Failed attempts: 1",
+      "created_at": "2026-10-26T16:33:19.778Z"
+    },
+    {
+      "id": "log_vfj7mlz6b",
+      "user_id": "u1",
+      "ip_address": "127.0.0.1",
+      "event": "auth.login",
+      "details": "User logged in successfully: kiaria2514@gmail.com",
+      "created_at": "2026-10-26T16:33:26.339Z"
+    },
+    {
+      "id": "log_9ml3b7k3n",
+      "user_id": "u1",
+      "ip_address": "127.0.0.1",
+      "event": "admin.content_modified",
+      "details": "Admin saveed content of type: user id: u_rff7la6ye",
+      "created_at": "2026-10-28T11:25:37.339Z"
+    }
+  ],
+  "role_permissions": {
+    "super_admin": [
+      "system:all",
+      "users:manage",
+      "content:manage",
+      "content:moderate",
+      "content:create_edit",
+      "dashboard:access",
+      "profile:manage"
+    ],
+    "admin": [
+      "users:manage",
+      "content:manage",
+      "content:moderate",
+      "content:create_edit",
+      "dashboard:access",
+      "profile:manage"
+    ],
+    "moderator": [
+      "content:moderate",
+      "dashboard:access",
+      "profile:manage"
+    ],
+    "editor": [
+      "content:create_edit",
+      "dashboard:access",
+      "profile:manage"
+    ],
+    "user": [
+      "dashboard:access",
+      "profile:manage"
+    ],
+    "guest": []
+  },
+  "password_reset_tokens": [],
+  "email_verification_tokens": [],
+  "coupons": [
+    {
+      "code": "SAVE20",
+      "discountType": "percentage",
+      "discountValue": 20,
+      "expiresAt": "2030-12-31T23:59:59.000Z",
+      "usageLimit": 1000,
+      "timesUsed": 0,
+      "singleUsePerUser": false,
+      "claimedByUsers": []
+    },
+    {
+      "code": "FIXED5",
+      "discountType": "fixed",
+      "discountValue": 5,
+      "expiresAt": "2030-12-31T23:59:59.000Z",
+      "usageLimit": 1000,
+      "timesUsed": 0,
+      "singleUsePerUser": false,
+      "claimedByUsers": []
+    },
+    {
+      "code": "LAUNCH100",
+      "discountType": "percentage",
+      "discountValue": 100,
+      "expiresAt": "2030-12-31T23:59:59.000Z",
+      "usageLimit": 50,
+      "timesUsed": 0,
+      "singleUsePerUser": true,
+      "claimedByUsers": []
+    },
+    {
+      "code": "WELCOME10",
+      "discountType": "percentage",
+      "discountValue": 10,
+      "expiresAt": "2030-12-31T23:59:59.000Z",
+      "usageLimit": 500,
+      "timesUsed": 0,
+      "singleUsePerUser": false,
+      "claimedByUsers": []
+    },
+    {
+      "code": "EXPIRED_CODE",
+      "discountType": "percentage",
+      "discountValue": 15,
+      "expiresAt": "2024-01-01T00:00:00.000Z",
+      "usageLimit": 100,
+      "timesUsed": 0,
+      "singleUsePerUser": false,
+      "claimedByUsers": []
+    },
+    {
+      "code": "LIMIT_REACHED",
+      "discountType": "percentage",
+      "discountValue": 25,
+      "expiresAt": "2030-12-31T23:59:59.000Z",
+      "usageLimit": 1,
+      "timesUsed": 1,
+      "singleUsePerUser": false,
+      "claimedByUsers": []
+    },
+    {
+      "code": "SINGLE_USER",
+      "discountType": "percentage",
+      "discountValue": 50,
+      "expiresAt": "2030-12-31T23:59:59.000Z",
+      "usageLimit": 500,
+      "timesUsed": 0,
+      "singleUsePerUser": true,
+      "claimedByUsers": []
+    }
+  ],
+  "plans": [
+    {
+      "id": "free",
+      "name": "Free Starter",
+      "tagline": "Evaluate core communication signals.",
+      "monthlyPrice": 0,
+      "annualPrice": 0,
+      "limits": {
+        "analysisPerMonth": 5,
+        "savedHistory": 10,
+        "customTemplates": 2,
+        "customPlaybooks": 0
+      },
+      "features": [
+        "Basic message risk analysis",
+        "Basic rewrite suggestions (standard styles)",
+        "Core Communication Fingerprint insights",
+        "Recent analysis history (up to 10 days)",
+        "Limited pre-built starters library",
+        "Limited playbooks view",
+        "Basic Message DNA mapping",
+        "One-click clipboard copy"
+      ],
+      "description": "Perfect for professionals evaluating core communication landing diagnostics."
+    },
+    {
+      "id": "plus",
+      "name": "Plus Professional",
+      "tagline": "Deepen emotional control & rewrite logic.",
+      "monthlyPrice": 12,
+      "annualPrice": 96,
+      "popular": true,
+      "limits": {
+        "analysisPerMonth": 50,
+        "savedHistory": -1,
+        "customTemplates": 15,
+        "customPlaybooks": 5
+      },
+      "features": [
+        "Everything in Free plan",
+        "Advanced communication deep analysis",
+        "Unlimited rewrites (fair-use policy)",
+        "Emotional Blueprint scoring & charts",
+        "Interactive Risk Heatmap",
+        "Likely Interpretation analysis",
+        "Custom templates (up to 15)",
+        "Custom playbooks (up to 5)"
+      ],
+      "description": "Designed for professionals, managers, and frequent individual communicators."
+    },
+    {
+      "id": "pro",
+      "name": "Pro Sovereign",
+      "tagline": "Full personalized AI communication coaching.",
+      "monthlyPrice": 29,
+      "annualPrice": 232,
+      "limits": {
+        "analysisPerMonth": 500,
+        "savedHistory": -1,
+        "customTemplates": 100,
+        "customPlaybooks": 50
+      },
+      "features": [
+        "Everything in Plus plan",
+        "Personalized Communication Coach",
+        "Weekly Communication Review analytics",
+        "Scenario Simulator (multi-move chats)",
+        "Custom AI behavior preferences",
+        "Custom writing styles mapping"
+      ],
+      "description": "For power users, consultants, founders, and content creators commanding high-stakes relations."
+    },
+    {
+      "id": "teams",
+      "name": "Teams Hub",
+      "tagline": "Synchronize high-standards across your organization.",
+      "monthlyPrice": 15,
+      "annualPrice": 120,
+      "limits": {
+        "analysisPerMonth": 2500,
+        "savedHistory": -1,
+        "customTemplates": -1,
+        "customPlaybooks": -1
+      },
+      "features": [
+        "Everything in Pro plan",
+        "Centralized Team Workspaces",
+        "Shared message templates library",
+        "Shared corporate strategy playbooks",
+        "Role-Based Access Control (RBAC)",
+        "Central Admin Dashboard & reports"
+      ],
+      "description": "Collaborative solution for growing teams, departments, and communication-driven agencies."
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise Secure",
+      "tagline": "SSO, compliance-ready controls, and dedicated support.",
+      "monthlyPrice": 99,
+      "annualPrice": 950,
+      "limits": {
+        "analysisPerMonth": -1,
+        "savedHistory": -1,
+        "customTemplates": -1,
+        "customPlaybooks": -1
+      },
+      "features": [
+        "Everything in Teams plan",
+        "Single Sign-On (SSO) integration (SAML, OIDC)",
+        "Custom data retention policies",
+        "Dedicated 24/7 Account Management",
+        "SLA-backed network guarantees"
+      ],
+      "description": "Robust alignment, security, and elite support for multi-department enterprises."
+    }
+  ]
+}

@@ -5,33 +5,12 @@
 
 import crypto from 'crypto';
 import http from 'http';
+import { loadDB, saveDB } from './db';
+import { logSecurityEvent } from './security';
 
-// Secret key for cryptographic signing of checkout tokens and webhooks.
-//
-// REMOVED: these previously fell back to hardcoded default strings
-// ('hil_sig_secret_prod_grade_987654321', 'whsec_howitlands_secure_key_123456789')
-// if the env vars weren't set. Since those defaults are visible to anyone
-// with the source code, an unset env var in production didn't mean "no
-// signing" — it meant "signing with a secret every reader of this file
-// already knows," which is worse than no signing at all: it looks secure
-// while being forgeable. A forged, correctly-signed webhook to
-// /api/webhooks/gateway could grant free paid billing status. Both now
-// fail closed at startup instead.
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(
-      `[BILLING] ${name} is not set. Refusing to start without a real signing secret — ` +
-      `a missing secret must never silently fall back to a value that's readable in source control. ` +
-      `Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" ` +
-      `and set it as ${name} in your environment.`
-    );
-  }
-  return value;
-}
-
-const SIGNING_SECRET = requireEnv('SIGNING_SECRET');
-export const WEBHOOK_SECRET = requireEnv('WEBHOOK_SECRET');
+// Secret key for cryptographic signing of checkout tokens and webhooks
+const SIGNING_SECRET = process.env.SIGNING_SECRET || 'hil_sig_secret_prod_grade_987654321';
+export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'whsec_howitlands_secure_key_123456789';
 
 export interface CheckoutSession {
   sessionId: string;
@@ -114,25 +93,27 @@ export function verifyCheckoutSession(session: CheckoutSession): boolean {
  * Enforces production-grade Fraud Prevention rules.
  * Returns fraud scoring and validation details.
  */
-export async function evaluateFraudRisk(
+export function evaluateFraudRisk(
   userId: string,
   amount: number,
   payment: PaymentDetails,
   clientIp: string
-): Promise<{ block: boolean; reason?: string; fraudScore: number }> {
+): { block: boolean; reason?: string; fraudScore: number } {
   let fraudScore = 0;
 
   // Rule 1: High Frequency Velocity Checking (DoS & Card Testing prevention)
-  const { auditRepo } = await import('./db/index.ts');
-  const recentAuditLogs = await auditRepo.listAuditLogs({ userId, event: 'billing.payment_attempt_failed', limit: 10, offset: 0 });
-  const recentFailures = recentAuditLogs.filter(
-    (log: any) => new Date(log.created_at).getTime() > Date.now() - 10 * 60 * 1000 // Last 10 minutes
-  );
+  const currentDb = loadDB() as any;
+  const recentAuditLogs = currentDb.audit_logs?.filter(
+    (log: any) =>
+      log.user_id === userId &&
+      log.event === 'billing.payment_attempt_failed' &&
+      new Date(log.created_at).getTime() > Date.now() - 10 * 60 * 1000 // Last 10 minutes
+  ) || [];
 
-  if (recentFailures.length >= 3) {
+  if (recentAuditLogs.length >= 3) {
     fraudScore += 60;
-    if (recentFailures.length >= 5) {
-      await auditRepo.logSecurityEvent(userId, clientIp, 'fraud.blocked_by_velocity', 'Payment blocked due to high-frequency failure velocity.');
+    if (recentAuditLogs.length >= 5) {
+      logSecurityEvent(userId, clientIp, 'fraud.blocked_by_velocity', 'Payment blocked due to high-frequency failure velocity.');
       return { block: true, reason: 'Transaction blocked: too many failed attempts. Please contact security support.', fraudScore: 100 };
     }
   }

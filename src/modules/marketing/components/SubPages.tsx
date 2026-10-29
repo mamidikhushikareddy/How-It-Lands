@@ -166,7 +166,7 @@ export default function SubPages({ route, onNavigate }: SubPagesProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#111315] text-[#FAF8F5] flex flex-col font-sans selection:bg-[#888888] selection:text-white animate-fade-in">
+    <div className="min-h-screen bg-[#111315] text-[#FAF8F5] flex flex-col font-sans animate-fade-in">
       {/* Navigation Header */}
       <nav className="border-b border-white/5 bg-[#111315]/95 sticky top-0 z-50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -1078,8 +1078,8 @@ export default function SubPages({ route, onNavigate }: SubPagesProps) {
           <div>
             <h5 className="font-semibold text-[#FAF8F5] uppercase tracking-wider mb-3 text-[10px] font-mono">Connect</h5>
             <ul className="space-y-2 font-mono text-[11px]">
-              <li><span className="block text-white">kiaria2514@gmail.com</span></li>
-              <li><span className="block">AI Studio Development Sandbox</span></li>
+              <li><span className="block text-white">support@howitlands.app</span></li>
+              <li><span className="block text-[#B5B8BE]">Tactical Communication Engine</span></li>
             </ul>
           </div>
         </div>

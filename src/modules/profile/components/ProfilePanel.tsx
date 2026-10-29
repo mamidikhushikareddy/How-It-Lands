@@ -13,6 +13,8 @@ import { User, UserProfile } from '../../../types';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { notify } from '../../../components/ui/Toast';
+import { authFetch } from '../../../lib/authStorage';
 
 interface ProfilePanelProps {
   user: User;
@@ -156,12 +158,21 @@ export default function ProfilePanel({
   const fetchSecurityMetrics = async () => {
     try {
       setLoadingLogs(true);
-      const res = await fetch('/api/security/metrics');
+      const res = await authFetch('/api/security/metrics');
+      if (!res.ok) {
+        console.warn(`Security metrics returned status ${res.status}`);
+        return;
+      }
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        console.warn('Security metrics response was not JSON');
+        return;
+      }
       const data = await res.json();
-      setIsPgActive(data.postgresActive);
-      setAuditLogs(data.auditLogs || []);
+      setIsPgActive(Boolean(data.postgresActive));
+      setAuditLogs(Array.isArray(data.auditLogs) ? data.auditLogs : []);
     } catch (err) {
-      console.error('Failed to load security metrics:', err);
+      console.warn('Notice: Could not load security metrics:', err);
     } finally {
       setLoadingLogs(false);
     }
@@ -181,7 +192,7 @@ export default function ProfilePanel({
     setUpdatingProfile(true);
 
     try {
-      const res = await fetch('/api/user/update', {
+      const res = await authFetch('/api/user/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email })
@@ -226,7 +237,7 @@ export default function ProfilePanel({
     };
 
     try {
-      const res = await fetch('/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: updatedProfile })
@@ -271,7 +282,7 @@ export default function ProfilePanel({
     };
 
     try {
-      const res = await fetch('/api/profile', {
+      const res = await authFetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: updatedProfile })
@@ -313,7 +324,7 @@ export default function ProfilePanel({
 
     setUpdatingPassword(true);
     try {
-      const res = await fetch('/api/auth/change-password', {
+      const res = await authFetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword: oldPassword, newPassword })
@@ -340,7 +351,7 @@ export default function ProfilePanel({
     setMfaError('');
     setMfaSuccess('');
     try {
-      const res = await fetch('/api/auth/2fa/setup', { method: 'POST' });
+      const res = await authFetch('/api/auth/2fa/setup', { method: 'POST' });
       const data = await res.json();
       if (data.error) {
         setMfaError(data.error);
@@ -359,7 +370,7 @@ export default function ProfilePanel({
     e.preventDefault();
     setMfaError('');
     try {
-      const res = await fetch('/api/auth/2fa/verify', {
+      const res = await authFetch('/api/auth/2fa/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ secret: mfaSecret, code: verificationCode })
@@ -392,7 +403,7 @@ export default function ProfilePanel({
     setMfaError('');
     setMfaSuccess('');
     try {
-      const res = await fetch('/api/auth/2fa/disable', { method: 'POST' });
+      const res = await authFetch('/api/auth/2fa/disable', { method: 'POST' });
       const data = await res.json();
       if (data.error) {
         setMfaError(data.error);
@@ -414,7 +425,7 @@ export default function ProfilePanel({
     if (plan === 'free') {
       setUpgradingPlan('free');
       try {
-        const res = await fetch('/api/billing/upgrade', {
+        const res = await authFetch('/api/billing/upgrade', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ plan })
@@ -422,13 +433,13 @@ export default function ProfilePanel({
         const data = await res.json();
         if (data.success) {
           onUpdateUser(data.user);
-          alert(`Successfully changed subscription plan to Free Starter!`);
+          notify(`Successfully changed subscription plan to Free Starter!`, 'success');
         } else {
-          alert(data.error || 'Plan change failed.');
+          notify(data.error || 'Plan change failed.', 'error');
         }
       } catch (err) {
         console.error(err);
-        alert('Subscription update failed. Please try again.');
+        notify('Subscription update failed. Please try again.', 'error');
       } finally {
         setUpgradingPlan(null);
       }
@@ -437,7 +448,7 @@ export default function ProfilePanel({
       if (onNavigateToBilling) {
         onNavigateToBilling();
       } else {
-        alert('Please open the Billing tab to upgrade securely via the Payment Gateway.');
+        notify('Please open the Billing tab to upgrade securely via the Payment Gateway.', 'info');
       }
     }
   };
@@ -479,7 +490,7 @@ export default function ProfilePanel({
   // Get current active avatar color style
   const getAvatarStyle = () => {
     const found = avatars.find(a => a.id === selectedAvatar);
-    return found ? found.bg : 'bg-[#1e1e1e] text-[#FAF8F5] border-white/15';
+    return found ? found.bg : 'bg-[#1e1e1e] text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-300 dark:border-white/20';
   };
 
   // Connected Terminals and Devices
@@ -492,52 +503,52 @@ export default function ProfilePanel({
   const handleRevokeDevice = async (deviceId: string, deviceName: string) => {
     if (!window.confirm(`Are you sure you want to revoke and terminate the session for ${deviceName}?`)) return;
     try {
-      const res = await fetch('/api/auth/logout-all-devices', { method: 'POST' });
+      const res = await authFetch('/api/auth/logout-all-devices', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setActiveDevices(prev => prev.filter(d => d.id === 'dev-1' || d.id !== deviceId));
-        alert(`Session from ${deviceName} has been successfully revoked & terminated.`);
+        notify(`Session from ${deviceName} has been successfully revoked.`, 'success');
       } else {
-        alert(data.error || 'Failed to revoke device session.');
+        notify(data.error || 'Failed to revoke device session.', 'error');
       }
     } catch (err) {
       console.error(err);
       setActiveDevices(prev => prev.filter(d => d.id !== deviceId));
-      alert(`Session from ${deviceName} has been successfully revoked & terminated.`);
+      notify(`Session from ${deviceName} has been successfully revoked.`, 'success');
     }
   };
 
   const handleDeleteAccount = async () => {
     if (!window.confirm("Are you absolutely sure you want to permanently delete your account, your profile, and all conversation logs? This is irreversible!")) return;
     try {
-      const res = await fetch('/api/privacy/delete-account', { method: 'POST' });
+      const res = await authFetch('/api/privacy/delete-account', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        alert(data.message || 'Your account and all associated data have been permanently erased.');
+        notify(data.message || 'Your account and all associated data have been permanently erased.', 'info');
         window.location.href = '/';
       } else {
-        alert(data.error || 'Failed to delete account.');
+        notify(data.error || 'Failed to delete account.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Error communicating with delete account API.');
+      notify('Error communicating with delete account API.', 'error');
     }
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-2 animate-fade-in text-[#FAF8F5]">
+    <div className="space-y-6 max-w-5xl mx-auto p-2 animate-fade-in text-slate-900 dark:text-slate-100">
       {/* Title block */}
-      <div className="border-b border-white/5 pb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="border-b border-slate-200 dark:border-slate-200 dark:border-white/10 pb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <span className="text-[10px] uppercase font-mono tracking-widest text-[#00E5FF] font-bold">WORKSPACE PROFILE & ALIGNMENT</span>
-          <h1 className="text-2xl md:text-3xl font-light font-serif text-white">My Profile & Settings</h1>
-          <p className="text-xs text-[#a0a0a0] font-sans font-light">Configure account defaults, strategic tone guidelines, localized workspace environments, and privacy credentials.</p>
+          <span className="text-[10px] uppercase font-mono tracking-widest text-sky-700 dark:text-[#00E5FF] font-bold">WORKSPACE PROFILE & ALIGNMENT</span>
+          <h1 className="text-2xl md:text-3xl font-light font-serif text-slate-900 dark:text-slate-100">My Profile & Settings</h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 font-sans font-light">Configure account defaults, strategic tone guidelines, localized workspace environments, and privacy credentials.</p>
         </div>
       </div>
 
       {/* Hero Overview Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 p-6 bg-[#141414] border border-[#262626] rounded-[24px] flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden hover:border-white/10 transition-all duration-300">
+        <div className="md:col-span-2 p-6 bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 rounded-[24px] shadow-sm flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden hover:border-slate-200 dark:border-white/10 transition-all duration-300">
           {/* Subtle background glow */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-[#00E5FF]/5 rounded-full filter blur-3xl pointer-events-none" />
 
@@ -548,30 +559,30 @@ export default function ProfilePanel({
 
           <div className="space-y-2 flex-1 text-center sm:text-left">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-              <h2 className="text-lg font-serif font-light text-white">{user.name}</h2>
+              <h2 className="text-lg font-serif font-light text-slate-900 dark:text-slate-100">{user.name}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono tracking-wider font-semibold uppercase border mx-auto sm:mx-0 w-fit bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                 Sovereign Workspace Active
               </span>
             </div>
-            <p className="text-xs text-[#a0a0a0] font-sans font-light">{user.email}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-sans font-light">{user.email}</p>
             <p className="text-[10px] text-[#888] font-mono">ID: {user.id} • Registered UTC</p>
           </div>
         </div>
 
         {/* Saved Analysis Statistics */}
-        <div className="p-6 bg-[#141414] border border-[#262626] rounded-[24px] flex flex-col justify-between space-y-4 hover:border-white/10 transition-all duration-300">
+        <div className="p-6 bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 rounded-[24px] shadow-sm flex flex-col justify-between space-y-4 hover:border-slate-200 dark:border-white/10 transition-all duration-300">
           <div className="space-y-1">
             <h3 className="text-xs font-mono font-bold text-[#00E5FF] uppercase">Diagnostics Dashboard</h3>
             <div className="flex justify-between items-baseline pt-1">
-              <span className="text-2xl font-semibold text-white font-mono">{user.usage_count_month}</span>
-              <span className="text-xs text-[#a0a0a0] font-mono">
+              <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100 font-mono">{user.usage_count_month}</span>
+              <span className="text-xs text-slate-600 dark:text-slate-400 font-mono">
                 runs recorded
               </span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <p className="text-[10px] text-[#a0a0a0] leading-relaxed font-sans font-light">
+            <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans font-light">
               Your communications strategist is unlocked. Real-time tactical guidance and advanced analysis models are fully active.
             </p>
           </div>
@@ -579,13 +590,13 @@ export default function ProfilePanel({
       </div>
 
       {/* Tabs navigation */}
-      <div className="flex border-b border-white/5 gap-2 overflow-x-auto pb-px">
+      <div className="flex border-b border-slate-200 dark:border-white/10 gap-2 overflow-x-auto pb-px">
         <button
           onClick={() => setActiveTab('details')}
           className={`py-3 px-4 font-mono text-xs font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'details' 
-              ? 'border-[#00E5FF] text-[#00E5FF]' 
-              : 'border-transparent text-[#a0a0a0] hover:text-white hover:border-white/10'
+              ? 'border-sky-600 text-sky-700 dark:border-[#00E5FF] dark:text-[#00E5FF]' 
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/10'
           }`}
         >
           <UserIcon className="w-3.5 h-3.5" />
@@ -596,8 +607,8 @@ export default function ProfilePanel({
           onClick={() => setActiveTab('strategy')}
           className={`py-3 px-4 font-mono text-xs font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'strategy' 
-              ? 'border-[#00E5FF] text-[#00E5FF]' 
-              : 'border-transparent text-[#a0a0a0] hover:text-white hover:border-white/10'
+              ? 'border-sky-600 text-sky-700 dark:border-[#00E5FF] dark:text-[#00E5FF]' 
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/10'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -608,8 +619,8 @@ export default function ProfilePanel({
           onClick={() => setActiveTab('workspace')}
           className={`py-3 px-4 font-mono text-xs font-medium border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === 'workspace' 
-              ? 'border-[#00E5FF] text-[#00E5FF]' 
-              : 'border-transparent text-[#a0a0a0] hover:text-white hover:border-white/10'
+              ? 'border-sky-600 text-sky-700 dark:border-[#00E5FF] dark:text-[#00E5FF]' 
+              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/10'
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
@@ -629,23 +640,23 @@ export default function ProfilePanel({
             <div className="lg:col-span-2 space-y-6">
               <Card className="space-y-5">
                 <div>
-                  <h3 className="font-medium text-white text-sm flex items-center gap-2">
-                    <UserIcon className="w-4 h-4 text-[#00E5FF]" />
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
+                    <UserIcon className="w-4 h-4 text-sky-600 dark:text-[#00E5FF]" />
                     <span>Identity Profile Details</span>
                   </h3>
-                  <p className="text-[11px] text-[#B5B8BE]">Update your personal profile identity details below. Standard email validation is active.</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">Update your personal profile identity details below. Standard email validation is active.</p>
                 </div>
 
                 {profileSuccess && (
-                  <div className="p-3 bg-emerald-950/20 text-emerald-300 border border-emerald-900/30 text-xs rounded-xl flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/30 text-xs rounded-xl flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                     <span>{profileSuccess}</span>
                   </div>
                 )}
 
                 {profileError && (
-                  <div className="p-3 bg-red-950/20 text-red-300 border border-red-900/30 text-xs rounded-xl flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <div className="p-3 bg-rose-50 dark:bg-red-950/20 text-rose-800 dark:text-red-300 border border-rose-200 dark:border-red-900/30 text-xs rounded-xl flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-red-400 flex-shrink-0" />
                     <span>{profileError}</span>
                   </div>
                 )}
@@ -653,7 +664,7 @@ export default function ProfilePanel({
                 <form onSubmit={handleUpdateDetails} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Full Name</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Full Name</label>
                       <Input
                         type="text"
                         value={name}
@@ -665,7 +676,7 @@ export default function ProfilePanel({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Email Address</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Email Address</label>
                       <Input
                         type="email"
                         value={email}
@@ -678,29 +689,28 @@ export default function ProfilePanel({
                   </div>
 
                   {/* Avatar Selector Grid */}
-                  <div className="border-t border-white/5 pt-4 space-y-2">
-                    <label className="text-xs text-[#B5B8BE]/60 block font-sans">Choose Visual Profile Palette</label>
+                  <div className="border-t border-slate-200 dark:border-white/10 pt-4 space-y-2">
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Choose Visual Profile Palette</label>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                      {avatars.map((av, index) => (
+                      {avatars.map((av) => (
                         <button
                           key={av.id}
                           type="button"
                           onClick={() => handleSelectAvatar(av.id)}
-                          style={index === 2 ? { borderColor: '#f1ff1a' } : undefined}
-                          className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between transition-all ${
+                          className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between transition-all cursor-pointer ${
                             selectedAvatar === av.id 
-                              ? 'bg-white/5 border-[#00E5FF] text-white shadow-[0_0_12px_rgba(0,229,255,0.1)]' 
-                              : 'bg-transparent border-white/5 text-[#B5B8BE] hover:border-white/15'
+                              ? 'bg-sky-50 dark:bg-[#1E293B] border-sky-600 dark:border-[#00E5FF] text-slate-900 dark:text-white shadow-xs font-semibold' 
+                              : 'bg-white dark:bg-[#151B28] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
                         >
                           <span className="truncate">{av.label}</span>
-                          {selectedAvatar === av.id && <Check className="w-3.5 h-3.5 text-[#00E5FF] flex-shrink-0" />}
+                          {selectedAvatar === av.id && <Check className="w-3.5 h-3.5 text-sky-600 dark:text-[#00E5FF] flex-shrink-0" />}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div style={{ borderColor: '#151414' }} className="flex justify-end pt-2">
+                  <div className="flex justify-end pt-2">
                     <Button type="submit" variant="primary" size="sm" loading={updatingProfile}>
                       Save Changes
                     </Button>
@@ -713,15 +723,14 @@ export default function ProfilePanel({
 
             {/* Quick overview rail */}
             <div className="space-y-6">
-              <Card style={{ borderColor: '#1b1a1a' }} className="p-4 bg-[#1e1414]/10 border border-red-900/10 space-y-3">
-                <h4 className="text-xs font-bold font-mono text-red-400 uppercase tracking-wider">Danger Zone</h4>
-                <p className="text-[10px] text-[#B5B8BE]">Permanently delete your profile and difficult conversation logs. This action cannot be undone.</p>
+              <Card className="p-4 bg-rose-50/50 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-900/30 space-y-3">
+                <h4 className="text-xs font-bold font-mono text-rose-700 dark:text-rose-400 uppercase tracking-wider">Danger Zone</h4>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">Permanently delete your profile and difficult conversation logs. This action cannot be undone.</p>
                 <Button 
                   onClick={handleDeleteAccount} 
                   variant="secondary" 
                   size="sm" 
-                  style={{ backgroundColor: '#ff3600', color: '#ffffff' }}
-                  className="w-full text-red-400 hover:text-red-300 border-red-950 hover:bg-red-950/20 text-[10px]"
+                  className="w-full text-rose-700 dark:text-rose-300 hover:text-white border-rose-300 dark:border-rose-900/50 hover:bg-rose-600 dark:hover:bg-rose-900/50 text-[10px]"
                 >
                   Delete Account & Vault
                 </Button>
@@ -738,11 +747,11 @@ export default function ProfilePanel({
                 {/* Core Tone Parameters */}
                 <Card className="space-y-5">
                   <div>
-                    <h3 className="font-medium text-white text-sm flex items-center gap-2">
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[#00E5FF]" />
                       <span>Diagnostic Tone Profiles</span>
                     </h3>
-                    <p className="text-[11px] text-[#B5B8BE]">Configure defaults for your personal dialogue engine. Our AI uses these guidelines to analyze and re-phrase drafts.</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Configure defaults for your personal dialogue engine. Our AI uses these guidelines to analyze and re-phrase drafts.</p>
                   </div>
 
                   {strategySuccess && (
@@ -761,11 +770,11 @@ export default function ProfilePanel({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Primary Communication Style</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Primary Communication Style</label>
                       <select 
                         value={commStyle}
                         onChange={(e) => setCommStyle(e.target.value)}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="warm">Warm & Empathetic (Default)</option>
                         <option value="direct">Direct & Concise (Corporate)</option>
@@ -775,7 +784,7 @@ export default function ProfilePanel({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Preferred Tone Description</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Preferred Tone Description</label>
                       <Input
                         type="text"
                         value={prefTone}
@@ -786,11 +795,11 @@ export default function ProfilePanel({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Default Scenario Context</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Default Scenario Context</label>
                       <select 
                         value={defScenario}
                         onChange={(e) => setDefScenario(e.target.value)}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="general">General (Standard awkward conversation)</option>
                         <option value="layoff">Layoff / Termination (Delicate HR)</option>
@@ -801,31 +810,31 @@ export default function ProfilePanel({
                     </div>
 
                     <div className="space-y-1.5 flex flex-col justify-end">
-                      <div className="flex items-start gap-3 bg-[#111315]/30 p-3.5 border border-white/5 rounded-xl h-fit">
+                      <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3.5 border border-slate-200 dark:border-slate-200 dark:border-white/10 rounded-xl h-fit">
                         <input
                           type="checkbox"
                           id="preserve_voice_profile"
                           checked={preserveVoice}
                           onChange={(e) => setPreserveVoice(e.target.checked)}
-                          className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                          className="w-4 h-4 mt-0.5 rounded border-slate-200 dark:border-white/10 bg-white dark:bg-[#10141C] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
                         />
                         <div>
-                          <label htmlFor="preserve_voice_profile" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                          <label htmlFor="preserve_voice_profile" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                             Always preserve original voice
                           </label>
-                          <span className="text-[10px] text-[#B5B8BE]">Avoid changing signature word choices unless strictly aggressive.</span>
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400">Avoid changing signature word choices unless strictly aggressive.</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs text-[#B5B8BE]/60 block font-sans">Personal Background / Professional Bio Context (Up to 1,000 chars)</label>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Personal Background / Professional Bio Context (Up to 1,000 chars)</label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value.substring(0, 1000))}
                       placeholder="e.g., I am a Lead Software Engineer who is highly collaborative but struggles to ask for scope adjustments with executives. Feed this bio into re-phrasers..."
-                      className="w-full h-24 p-3 rounded bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 text-xs text-[#FAF8F5] focus:outline-none resize-none leading-relaxed font-sans placeholder-[#B5B8BE]/20"
+                      className="w-full h-24 p-3 rounded bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-xs text-slate-900 dark:text-slate-100 focus:outline-none resize-none leading-relaxed font-sans placeholder-[#B5B8BE]/20"
                     />
                   </div>
                 </Card>
@@ -833,13 +842,13 @@ export default function ProfilePanel({
                 {/* Phrase Lists & Tag Managers */}
                 <Card className="space-y-5">
                   <div>
-                    <h3 className="font-medium text-white text-sm">Strategic Phrases & Pattern Shields</h3>
-                    <p className="text-[11px] text-[#B5B8BE]">Seed customized phrases and patterns. The analyst engine alerts you whenever drafts conflict with these rules.</p>
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Strategic Phrases & Pattern Shields</h3>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Seed customized phrases and patterns. The analyst engine alerts you whenever drafts conflict with these rules.</p>
                   </div>
 
                   {/* 1. Favorite Phrases */}
                   <div className="space-y-2">
-                    <label className="text-xs text-[#B5B8BE]/60 block font-sans">Preferred Signature Phrases (To always include when relevant)</label>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Preferred Signature Phrases (To always include when relevant)</label>
                     <div className="flex gap-2">
                       <Input
                         type="text"
@@ -854,7 +863,7 @@ export default function ProfilePanel({
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {favoritePhrases.length === 0 ? (
-                        <span className="text-[10px] text-[#B5B8BE]/40 italic">No preferred phrases added yet.</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">No preferred phrases added yet.</span>
                       ) : (
                         favoritePhrases.map((phrase, i) => (
                           <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-950/25 border border-emerald-900/30 text-emerald-400 text-[10px] rounded-lg">
@@ -870,7 +879,7 @@ export default function ProfilePanel({
 
                   {/* 2. Avoided Phrases */}
                   <div className="space-y-2">
-                    <label className="text-xs text-[#B5B8BE]/60 block font-sans">Strictly Avoided Phrases (Triggers warnings if written)</label>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Strictly Avoided Phrases (Triggers warnings if written)</label>
                     <div className="flex gap-2">
                       <Input
                         type="text"
@@ -885,7 +894,7 @@ export default function ProfilePanel({
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {avoidedPhrases.length === 0 ? (
-                        <span className="text-[10px] text-[#B5B8BE]/40 italic">No avoided phrases configured.</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">No avoided phrases configured.</span>
                       ) : (
                         avoidedPhrases.map((phrase, i) => (
                           <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-red-950/25 border border-red-900/30 text-red-400 text-[10px] rounded-lg">
@@ -901,7 +910,7 @@ export default function ProfilePanel({
 
                   {/* 3. Overdone Patterns */}
                   <div className="space-y-2">
-                    <label className="text-xs text-[#B5B8BE]/60 block font-sans">Overdone / Passive-Aggressive Patterns (e.g. over-apologizing)</label>
+                    <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Overdone / Passive-Aggressive Patterns (e.g. over-apologizing)</label>
                     <div className="flex gap-2">
                       <Input
                         type="text"
@@ -916,7 +925,7 @@ export default function ProfilePanel({
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {overdoPatterns.length === 0 ? (
-                        <span className="text-[10px] text-[#B5B8BE]/40 italic">No patterns selected.</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">No patterns selected.</span>
                       ) : (
                         overdoPatterns.map((pat, i) => (
                           <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-amber-950/25 border border-amber-900/30 text-amber-400 text-[10px] rounded-lg">
@@ -933,9 +942,9 @@ export default function ProfilePanel({
               </div>
 
               {/* Action Sidebar Column styled as card to match CSS selectors */}
-              <div className="space-y-4 rounded-2xl border bg-card text-card-foreground shadow-sm bg-[#141414] border-[#262626] p-5 md:p-6">
-                <h4 className="text-xs font-bold font-mono text-[#00E5FF] uppercase tracking-wider">Save Changes</h4>
-                <p className="text-[10px] text-[#B5B8BE] leading-relaxed">Ensure you persist these updates! The communication engine applies these directly during live diagnostic queries in your Message Analyst workspace.</p>
+              <div className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151B28] text-slate-900 dark:text-slate-100 shadow-xs p-5 md:p-6">
+                <h4 className="text-xs font-bold font-mono text-sky-700 dark:text-[#00E5FF] uppercase tracking-wider">Save Changes</h4>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">Ensure you persist these updates! The communication engine applies these directly during live diagnostic queries in your Message Analyst workspace.</p>
                 <Button 
                   type="button" 
                   onClick={() => handleSaveStrategy({ preventDefault: () => {} } as any)} 
@@ -943,15 +952,14 @@ export default function ProfilePanel({
                   size="sm" 
                   className="w-full" 
                   loading={savingStrategy}
-                  style={{ color: '#ffffff' }}
                 >
                   Save Strategic Persona
                 </Button>
 
-                <Card className="bg-[#111315]/50 border border-white/5 p-4 space-y-3 mt-4">
-                  <span className="text-[9px] uppercase font-mono tracking-wider font-bold text-[#00E5FF]">System Integration</span>
-                  <h4 className="text-xs font-semibold text-white">How this affects diagnostics</h4>
-                  <ul className="text-[10px] text-[#B5B8BE] space-y-2 list-disc list-inside">
+                <Card className="bg-slate-50 dark:bg-[#10141C]/50 border border-slate-200 dark:border-white/10 p-4 space-y-3 mt-4">
+                  <span className="text-[9px] uppercase font-mono tracking-wider font-bold text-sky-700 dark:text-[#00E5FF]">System Integration</span>
+                  <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100">How this affects diagnostics</h4>
+                  <ul className="text-[10px] text-slate-600 dark:text-slate-400 space-y-2 list-disc list-inside">
                     <li>Filters passive-aggressive phrasing</li>
                     <li>Re-aligns defensive blocks</li>
                     <li>Fills contextualized vocabulary holes</li>
@@ -970,11 +978,11 @@ export default function ProfilePanel({
                 {/* Localized Details */}
                 <Card className="space-y-5">
                   <div>
-                    <h3 className="font-medium text-white text-sm flex items-center gap-2">
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                       <Globe className="w-4 h-4 text-[#00E5FF]" />
                       <span>Localization & Localized Environment</span>
                     </h3>
-                    <p className="text-[11px] text-[#B5B8BE]">Adjust your localized timezone, interface spacing density, and localized dialogue rendering formats.</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Adjust your localized timezone, interface spacing density, and localized dialogue rendering formats.</p>
                   </div>
 
                   {workspaceSuccess && (
@@ -993,11 +1001,11 @@ export default function ProfilePanel({
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Timezone</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Timezone</label>
                       <select 
                         value={timezone}
                         onChange={(e) => setTimezone(e.target.value)}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="UTC">UTC (Coordinated Universal Time)</option>
                         <option value="America/New_York">EST (America/New_York)</option>
@@ -1011,11 +1019,11 @@ export default function ProfilePanel({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Language & Region</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Language & Region</label>
                       <select 
                         value={locale}
                         onChange={(e) => setLocale(e.target.value)}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="en-US">English (United States)</option>
                         <option value="en-GB">English (United Kingdom)</option>
@@ -1028,11 +1036,11 @@ export default function ProfilePanel({
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Interface Spacing Density</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Interface Spacing Density</label>
                       <select 
                         value={uiDensity}
                         onChange={(e) => setUiDensity(e.target.value as 'comfortable' | 'compact')}
-                        className="w-full p-3 bg-[#0a0a0a] border border-[#262626] focus:border-[#00E5FF]/50 rounded-xl text-xs text-[#FAF8F5] focus:outline-none cursor-pointer"
+                        className="w-full p-3 bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
                       >
                         <option value="comfortable">Comfortable Spacing</option>
                         <option value="compact">Compact Spacing</option>
@@ -1044,28 +1052,28 @@ export default function ProfilePanel({
                 {/* Global Accessibility Settings */}
                 <Card className="space-y-5">
                   <div>
-                    <h3 className="font-medium text-white text-sm flex items-center gap-2">
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                       <Sliders className="w-4 h-4 text-[#00E5FF]" />
                       <span>Global Accessibility Settings</span>
                     </h3>
-                    <p className="text-[11px] text-[#B5B8BE]">Configure display accessibility parameters including overall text size and dark theme toggling. Changes reflect immediately across the entire workspace.</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Configure display accessibility parameters including overall text size and dark theme toggling. Changes reflect immediately across the entire workspace.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Theme Preference */}
                     <div className="space-y-2">
-                      <label className="text-xs text-[#B5B8BE]/60 block font-sans">Workspace Theme Mode</label>
+                      <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Workspace Theme Mode</label>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
                           onClick={() => setTheme('light')}
                           className={`p-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
                             theme === 'light'
-                              ? 'bg-[#1A1D20]/50 border-[#00E5FF] text-white shadow-[0_0_12px_rgba(0,229,255,0.1)]'
-                              : 'bg-[#0a0a0a] border-[#262626] text-[#B5B8BE] hover:border-white/10'
+                              ? 'bg-sky-50 dark:bg-slate-800 border-sky-600 dark:border-cyan-400 text-slate-900 dark:text-white shadow-xs font-semibold'
+                              : 'bg-white dark:bg-[#10141C] border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
                           }`}
                         >
-                          <Sun className={`w-4 h-4 ${theme === 'light' ? 'text-[#00E5FF]' : ''}`} />
+                          <Sun className={`w-4 h-4 ${theme === 'light' ? 'text-amber-500' : 'text-slate-400'}`} />
                           <span>Light Mode (Warm Editorial)</span>
                         </button>
                         <button
@@ -1073,11 +1081,11 @@ export default function ProfilePanel({
                           onClick={() => setTheme('dark')}
                           className={`p-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
                             theme === 'dark'
-                              ? 'bg-[#1A1D20]/50 border-[#00E5FF] text-white shadow-[0_0_12px_rgba(0,229,255,0.1)]'
-                              : 'bg-[#0a0a0a] border-[#262626] text-[#B5B8BE] hover:border-white/10'
+                              ? 'bg-sky-50 dark:bg-slate-800 border-sky-600 dark:border-cyan-400 text-slate-900 dark:text-white shadow-xs font-semibold'
+                              : 'bg-white dark:bg-[#10141C] border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
                           }`}
                         >
-                          <Moon className={`w-4 h-4 ${theme === 'dark' ? 'text-[#00E5FF]' : ''}`} />
+                          <Moon className={`w-4 h-4 ${theme === 'dark' ? 'text-sky-400' : 'text-slate-400'}`} />
                           <span>Dark Mode (Enterprise Ink)</span>
                         </button>
                       </div>
@@ -1086,11 +1094,11 @@ export default function ProfilePanel({
                     {/* Text Scaling Slider */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs text-[#B5B8BE]/60 block font-sans">Font Scale (Relative Text Size)</label>
-                        <span className="text-xs font-mono font-bold text-[#00E5FF]">{Math.round(fontScale * 100)}%</span>
+                        <label className="text-xs text-slate-600 dark:text-slate-400 font-medium block font-sans">Font Scale (Relative Text Size)</label>
+                        <span className="text-xs font-mono font-bold text-sky-700 dark:text-[#00E5FF]">{Math.round(fontScale * 100)}%</span>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-[10px] text-[#B5B8BE] font-mono">0.75x</span>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">0.75x</span>
                         <input
                           type="range"
                           min="0.75"
@@ -1098,16 +1106,16 @@ export default function ProfilePanel({
                           step="0.05"
                           value={fontScale}
                           onChange={(e) => setFontScale(parseFloat(e.target.value))}
-                          className="flex-1 accent-[#00E5FF] bg-[#0a0a0a] border border-[#262626] h-1.5 rounded-lg appearance-none cursor-pointer"
+                          className="flex-1 accent-sky-600 dark:accent-[#00E5FF] bg-white dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 h-1.5 rounded-lg appearance-none cursor-pointer"
                         />
-                        <span className="text-[10px] text-[#B5B8BE] font-mono">1.40x</span>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">1.40x</span>
                       </div>
                       <div className="flex justify-between items-center pt-1">
-                        <span className="text-[10px] text-[#B5B8BE]/40 italic">Drag to scale all text, buttons, and headers</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">Drag to scale all text, buttons, and headers</span>
                         <button
                           type="button"
                           onClick={() => setFontScale(1)}
-                          className="px-2 py-0.5 rounded border border-white/5 bg-[#1A1D20]/40 text-[#B5B8BE] hover:text-white hover:bg-[#1A1D20] text-[10px] transition cursor-pointer"
+                          className="px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white text-[10px] font-medium transition cursor-pointer"
                         >
                           Reset to 100%
                         </button>
@@ -1118,57 +1126,57 @@ export default function ProfilePanel({
 
                 {/* Notifications setup */}
                 <Card className="space-y-4">
-                  <div className="flex items-center gap-2 pb-1 border-b border-white/5">
-                    <Bell className="w-4 h-4 text-[#00E5FF]" />
-                    <h3 className="font-medium text-white text-sm">Notification Trigger Settings</h3>
+                  <div className="flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-slate-800">
+                    <Bell className="w-4 h-4 text-sky-600 dark:text-[#00E5FF]" />
+                    <h3 className="font-medium text-slate-900 dark:text-slate-100 text-sm">Notification Trigger Settings</h3>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-start gap-3 bg-[#111315]/30 p-3.5 border border-white/5 rounded-xl">
+                    <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl">
                       <input
                         type="checkbox"
                         id="p_email_notifications"
                         checked={emailNotifications}
                         onChange={(e) => setEmailNotifications(e.target.checked)}
-                        className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                        className="w-4 h-4 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-[#10141C] text-sky-600 dark:text-[#00E5FF] focus:ring-sky-500 cursor-pointer"
                       />
                       <div>
-                        <label htmlFor="p_email_notifications" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                        <label htmlFor="p_email_notifications" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                           Analysis Reports & Diagnostics Log summaries
                         </label>
-                        <span className="text-[10px] text-[#ffffff]">Receive summaries and suggested playbooks directly in your inbox after processing awkward text blocks.</span>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-light block mt-0.5">Receive summaries and suggested playbooks directly in your inbox after processing awkward text blocks.</span>
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3 bg-[#111315]/30 p-3.5 border border-white/5 rounded-xl">
+                    <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl">
                       <input
                         type="checkbox"
                         id="p_security_alerts"
                         checked={securityAlerts}
                         onChange={(e) => setSecurityAlerts(e.target.checked)}
-                        className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                        className="w-4 h-4 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-[#10141C] text-sky-600 dark:text-[#00E5FF] focus:ring-sky-500 cursor-pointer"
                       />
                       <div>
-                        <label htmlFor="p_security_alerts" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                        <label htmlFor="p_security_alerts" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                           Strict Compliance Security Alerts
                         </label>
-                        <span className="text-[10px] text-[#ffffff]">Get notified immediately of new device sign-ins, 2FA modifications, or credential updates.</span>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-light block mt-0.5">Get notified immediately of new device sign-ins, 2FA modifications, or credential updates.</span>
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-3 bg-[#111315]/30 p-3.5 border border-white/5 rounded-xl">
+                    <div className="flex items-start gap-3 bg-slate-50 dark:bg-[#10141C]/30 p-3.5 border border-slate-200 dark:border-slate-800 rounded-xl">
                       <input
                         type="checkbox"
                         id="p_monthly_reports"
                         checked={monthlyReports}
                         onChange={(e) => setMonthlyReports(e.target.checked)}
-                        className="w-4 h-4 mt-0.5 rounded border-white/10 bg-[#0a0a0a] text-[#00E5FF] focus:ring-[#00E5FF] cursor-pointer"
+                        className="w-4 h-4 mt-0.5 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-[#10141C] text-sky-600 dark:text-[#00E5FF] focus:ring-sky-500 cursor-pointer"
                       />
                       <div>
-                        <label htmlFor="p_monthly_reports" className="text-xs font-medium text-[#FAF8F5] block cursor-pointer">
+                        <label htmlFor="p_monthly_reports" className="text-xs font-medium text-slate-900 dark:text-slate-100 block cursor-pointer">
                           Monthly Conversation alignment reports
                         </label>
-                        <span className="text-[10px] text-[#ffffff]">Opt-in to a comprehensive monthly trends analysis detailing voice alignment and metric progress.</span>
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 font-light block mt-0.5">Opt-in to a comprehensive monthly trends analysis detailing voice alignment and metric progress.</span>
                       </div>
                     </div>
                   </div>
@@ -1178,8 +1186,8 @@ export default function ProfilePanel({
               {/* Workspace column */}
               <div className="space-y-6">
                 <Card className="space-y-4">
-                  <h4 className="text-xs font-bold font-mono text-[#00E5FF] uppercase tracking-wider font-sans">Save Settings</h4>
-                  <p className="text-[10px] text-[#B5B8BE] leading-relaxed">Save your localized workspace configs. These are loaded dynamically during startup.</p>
+                  <h4 className="text-xs font-bold font-mono text-sky-700 dark:text-[#00E5FF] uppercase tracking-wider font-sans">Save Settings</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">Save your localized workspace configs. These are loaded dynamically during startup.</p>
                   <Button 
                     type="button" 
                     onClick={() => handleSaveWorkspace({ preventDefault: () => {} } as any)} 
@@ -1194,37 +1202,37 @@ export default function ProfilePanel({
 
                 <Card className="p-4 space-y-3">
                   <div>
-                    <h3 className="text-xs font-semibold text-white" style={{ color: '#ffffff' }}>Display Preview</h3>
+                    <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Display Preview</h3>
                   </div>
-                  <div className="space-y-2 text-[10px] text-[#B5B8BE] font-mono">
-                    <div>Selected Timezone: <span className="text-white">{timezone}</span></div>
-                    <div>Interface Language: <span className="text-white">{locale}</span></div>
-                    <div>Spacing Mode: <span className="text-[#00E5FF]">{uiDensity.toUpperCase()}</span></div>
+                  <div className="space-y-2 text-[10px] text-slate-600 dark:text-slate-400 font-mono">
+                    <div>Selected Timezone: <span className="text-slate-900 dark:text-slate-100 font-semibold">{timezone}</span></div>
+                    <div>Interface Language: <span className="text-slate-900 dark:text-slate-100 font-semibold">{locale}</span></div>
+                    <div>Spacing Mode: <span className="text-sky-700 dark:text-[#00E5FF] font-semibold">{uiDensity.toUpperCase()}</span></div>
                   </div>
                 </Card>
 
                 {/* Audit history log list */}
                 <Card className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold font-mono text-white uppercase tracking-wider">Audit logs</h4>
-                    <button onClick={fetchSecurityMetrics} className="text-[10px] text-[#00E5FF] hover:underline flex items-center gap-1 cursor-pointer">
+                    <h4 className="text-xs font-bold font-mono text-slate-900 dark:text-slate-100 uppercase tracking-wider">Audit logs</h4>
+                    <button onClick={fetchSecurityMetrics} className="text-[10px] text-sky-700 hover:text-sky-800 dark:text-[#00E5FF] dark:hover:text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer font-medium">
                       <RefreshCw className="w-3 h-3" />
                       <span>Refresh</span>
                     </button>
                   </div>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {loadingLogs ? (
-                      <span className="text-[10px] text-[#B5B8BE]/40 italic block py-2 animate-pulse">Fetching system audit trail...</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 italic block py-2 animate-pulse">Fetching system audit trail...</span>
                     ) : auditLogs.length === 0 ? (
-                      <span className="text-[10px] text-[#B5B8BE]/40 italic block py-2">No auditable actions tracked yet.</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 italic block py-2">No auditable actions tracked yet.</span>
                     ) : (
                       auditLogs.map((log) => (
-                        <div key={log.id} className="p-2 bg-[#0a0a0a] border border-[#262626] rounded-lg space-y-1">
+                        <div key={log.id} className="p-2 bg-slate-50 dark:bg-[#10141C] border border-slate-200 dark:border-slate-800 rounded-lg space-y-1">
                           <div className="flex justify-between text-[9px] font-mono">
-                            <span className="text-white/50">{log.event}</span>
-                            <span className="text-[#B5B8BE]/40">{new Date(log.created_at).toLocaleTimeString()}</span>
+                            <span className="text-slate-800 dark:text-slate-200 font-medium">{log.event}</span>
+                            <span className="text-slate-500 dark:text-slate-400">{new Date(log.created_at).toLocaleTimeString()}</span>
                           </div>
-                          <p className="text-[10px] text-[#B5B8BE] font-sans break-words">{log.details}</p>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-400 font-sans break-words">{log.details}</p>
                         </div>
                       ))
                     )}

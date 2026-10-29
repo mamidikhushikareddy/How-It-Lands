@@ -6,8 +6,9 @@
 import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
+import { loadDB, saveDB } from './db';
+import { logSecurityEvent } from './security';
 import { sendWebhookEvent } from './billingGateway';
-import { auditRepo, billingRepo, usersRepo, withTransaction } from './db/index.ts';
 
 export interface PlanLimit {
   analysisPerMonth: number;
@@ -62,16 +63,27 @@ export const BILLING_PLANS: Record<string, PlanDetail> = {
   }
 };
 
+export function getBillingPlans(db?: any) {
+  const currentDb = db || loadDB();
+  if (currentDb.plans && currentDb.plans.length > 0) {
+    const plansRecord: Record<string, any> = {};
+    currentDb.plans.forEach((p: any) => {
+      plansRecord[p.id] = p;
+    });
+    return plansRecord;
+  }
+  return BILLING_PLANS;
+}
+
 /**
  * Simulates SMTP transactional email dispatch with complete audit transparency
  */
-export async function sendBillingEmailSim(
-  userId: string,
-  email: string,
-  name: string,
-  emailType: string,
-  details: any
-) {
+export function sendBillingEmailSim(userId: string, emailType: string, details: any) {
+  const currentDb = loadDB() as any;
+  const user = currentDb.users.find((u: any) => u.id === userId);
+  const email = user ? user.email : 'unknown@howitlands.com';
+  const name = user ? user.name : 'Valued Customer';
+
   let subject = '';
   let content = '';
 
@@ -106,7 +118,19 @@ export async function sendBillingEmailSim(
   }
 
   // Record dispatch in system audit log
-  await auditRepo.logSecurityEvent(userId, undefined, 'email.sent', `Email Type: ${emailType} | Sent to: ${email} | Subject: ${subject}`);
+  const auditId = 'aud_' + Math.random().toString(36).substr(2, 9);
+  const newAudit = {
+    id: auditId,
+    created_at: new Date().toISOString(),
+    event: 'email.sent',
+    user_id: userId,
+    ip_address: '127.0.0.1',
+    details: `Email Type: ${emailType} | Sent to: ${email} | Subject: ${subject}`
+  };
+
+  if (!currentDb.audit_logs) currentDb.audit_logs = [];
+  currentDb.audit_logs.push(newAudit);
+  saveDB();
 
   console.log(`[EMAIL SIMULATOR] Dispatching notification to ${email}:\n  Subject: ${subject}\n  Content: ${content.substring(0, 150)}...\n`);
 }
@@ -114,25 +138,29 @@ export async function sendBillingEmailSim(
 /**
  * Compiles a real, beautifully formatted invoice PDF using pdfkit
  */
-export interface InvoicePdfData {
-  invoice_number: string;
-  created_at: string | Date;
-  status: string;
-  amount: number; // dollars, for display
-  plan: string;
-  billing_cycle: string;
-}
-export interface InvoicePdfUser {
-  name: string;
-  email: string;
-  billing_customer_id: string | null;
-}
-
 export async function generateInvoicePDF(
-  invoice: InvoicePdfData,
-  user: InvoicePdfUser,
+  invoiceId: string,
   outputStream: NodeJS.WritableStream
 ): Promise<void> {
+  const currentDb = loadDB() as any;
+  
+  // Locate invoice in global records
+  let invoice: any = null;
+  let user: any = null;
+
+  for (const u of currentDb.users) {
+    const inv = u.invoices?.find((i: any) => i.id === invoiceId);
+    if (inv) {
+      invoice = inv;
+      user = u;
+      break;
+    }
+  }
+
+  if (!invoice || !user) {
+    throw new Error('Invoice not found.');
+  }
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -197,7 +225,8 @@ export async function generateInvoicePDF(
 
       // 4. Draw Line Item Details
       const itemTop = tableTop + 25;
-      const planName = BILLING_PLANS[invoice.plan]?.name || 'Linguistic Analysis Access';
+      const plansDb = getBillingPlans(currentDb);
+      const planName = plansDb[invoice.plan]?.name || 'Linguistic Analysis Access';
       const cycleText = invoice.billing_cycle === 'annual' ? 'Annualized Corporate License' : 'Monthly Strategy Subscription';
       const description = `Subscription renewal for How It Lands (${planName} - ${cycleText})`;
 
@@ -253,76 +282,141 @@ export async function generateInvoicePDF(
  */
 export async function executeSubscriptionLapseCheck(): Promise<{ processed: number; failures: number }> {
   console.log('[CRON ENGINE] Sweeping database for active subscription renewals, expired trials, and past-due accounts...');
+  const currentDb = loadDB() as any;
   let processed = 0;
   let failures = 0;
 
-  // A. Trial expiration — targeted query instead of scanning every user row.
-  const { pool } = await import('./db/pool.ts');
-  const expiredTrials = await pool.query(
-    `SELECT id, name, email FROM users WHERE trial_active = TRUE AND trial_expires_at < NOW() AND deleted_at IS NULL`
-  );
-  for (const user of expiredTrials.rows) {
-    await usersRepo.updateUser(user.id, { trial_active: false, trial_expires_at: null, plan: 'free', billing_status: 'inactive' });
-    await sendBillingEmailSim(user.id, user.email, user.name, 'trial_expired', { planName: 'Pro Sovereign' });
-    await auditRepo.logSecurityEvent(user.id, undefined, 'billing.trial_expired', 'Subscription downgraded back to Free after trial expired.');
-    processed++;
-  }
+  const now = new Date();
 
-  // B. Paid subscription renewal cycle — find candidates whose latest paid
-  // invoice is older than their billing cycle length.
-  const renewalCandidates = await pool.query(`
-    SELECT u.id, u.name, u.email, u.plan, u.billing_paused, u.billing_canceled, u.billing_cycle,
-           i.id AS latest_invoice_id, i.created_at AS latest_invoice_at, i.billing_cycle AS invoice_cycle
-    FROM users u
-    JOIN LATERAL (
-      SELECT id, created_at, billing_cycle FROM invoices
-      WHERE user_id = u.id AND status = 'paid'
-      ORDER BY created_at DESC LIMIT 1
-    ) i ON true
-    WHERE u.plan != 'free' AND u.trial_active = FALSE AND u.deleted_at IS NULL
-      AND i.created_at < NOW() - (CASE WHEN i.billing_cycle = 'annual' THEN INTERVAL '365 days' ELSE INTERVAL '30 days' END)
-  `);
+  for (const user of currentDb.users) {
+    let userChanged = false;
 
-  for (const row of renewalCandidates.rows) {
-    if (row.billing_paused) {
-      await usersRepo.updateUser(row.id, { plan: 'free', billing_status: 'inactive' });
-      processed++;
-      continue;
-    }
-    if (row.billing_canceled) {
-      await usersRepo.updateUser(row.id, { plan: 'free', billing_status: 'inactive' });
-      await sendBillingEmailSim(row.id, row.email, row.name, 'trial_expired', { planName: BILLING_PLANS['free']?.name });
-      processed++;
-      continue;
+    // A. Trial Expiration State Check
+    if (user.trial_active && user.trial_expires_at) {
+      const expiry = new Date(user.trial_expires_at);
+      if (now > expiry) {
+        console.log(`[CRON ENGINE] User ${user.email}'s Pro Trial has expired. Defaulting back to Free tier.`);
+        user.trial_active = false;
+        user.trial_expires_at = null;
+        user.plan = 'free';
+        user.billing_status = 'inactive';
+        userChanged = true;
+
+        sendBillingEmailSim(user.id, 'trial_expired', { planName: 'Pro Sovereign' });
+        logSecurityEvent(user.id, '127.0.0.1', 'billing.trial_expired', 'Subscription downgraded back to Free after trial expired.');
+        processed++;
+      }
     }
 
-    const planDetails = BILLING_PLANS[row.plan];
-    const amount = row.invoice_cycle === 'annual' ? planDetails.annualPrice : planDetails.monthlyPrice;
-    const isChargeSuccess = Math.random() > 0.08; // simulated 92% renewal success rate
+    // B. Paid subscription billing renewal cycle
+    if (user.plan !== 'free' && !user.trial_active) {
+      // Find latest invoice of active plan
+      const userInvoices = user.invoices || [];
+      const paidInvs = userInvoices.filter((i: any) => i.status === 'paid');
+      
+      if (paidInvs.length > 0) {
+        // Sort to find latest paid invoice date
+        const latestPaid = paidInvs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+        
+        // Compute renewal date
+        const cycleDays = latestPaid.billing_cycle === 'annual' ? 365 : 30;
+        const renewalDate = new Date(latestPaid.created_at);
+        renewalDate.setDate(renewalDate.getDate() + cycleDays);
 
-    if (isChargeSuccess) {
-      const invoiceId = 'inv_' + Math.random().toString(36).substr(2, 9);
-      const invoiceNum = `HIL-REN-${Math.floor(1000 + Math.random() * 9000)}`;
-      await billingRepo.createInvoice({
-        id: invoiceId, userId: row.id, invoiceNumber: invoiceNum,
-        amountCents: Math.round(amount * 100), currency: 'USD', status: 'paid',
-        planId: row.plan, billingCycle: row.invoice_cycle,
-      });
-      await usersRepo.updateUser(row.id, { billing_status: 'active' });
-      await sendBillingEmailSim(row.id, row.email, row.name, 'payment_success', {
-        planName: planDetails.name, amount, transactionId: 'ch_' + Math.random().toString(36).substr(2, 9), invoiceNumber: invoiceNum,
-      });
-      await sendWebhookEvent('invoice.paid', { userId: row.id, amount, plan: row.plan, billingCycle: row.invoice_cycle, invoiceId });
-      await auditRepo.logSecurityEvent(row.id, undefined, 'billing.subscription_renewed', `Subscription renewed successfully for $${amount}`);
-      processed++;
-    } else {
-      await usersRepo.updateUser(row.id, { billing_status: 'past_due' });
-      failures++;
-      await sendBillingEmailSim(row.id, row.email, row.name, 'payment_failed', {
-        planName: planDetails.name, amount, reason: 'Declined: Insufficient Funds. Automated retry schedule initiated.',
-      });
-      await sendWebhookEvent('invoice.payment_failed', { userId: row.id, amount, plan: row.plan, billingCycle: row.invoice_cycle, reason: 'Declined: Insufficient Funds' });
-      await auditRepo.logSecurityEvent(row.id, undefined, 'billing.payment_attempt_failed', `Renewal payment attempt failed for plan: ${row.plan}`);
+        if (now > renewalDate) {
+          console.log(`[CRON ENGINE] Renewal cycle detected for user ${user.email}. Plan: ${user.plan}. Processing automatic subscription charge...`);
+          
+          if (user.billing_paused) {
+            console.log(`[CRON ENGINE] User ${user.email} subscription is PAUSED. Suspension activated, defaulting to Free.`);
+            user.plan = 'free';
+            user.billing_status = 'inactive';
+            userChanged = true;
+            processed++;
+          } else if (user.billing_canceled) {
+            console.log(`[CRON ENGINE] User ${user.email} auto-renewal is CANCELED. Lapsing to Free.`);
+            const plansDb = getBillingPlans(currentDb);
+            user.plan = 'free';
+            user.billing_status = 'inactive';
+            userChanged = true;
+            sendBillingEmailSim(user.id, 'trial_expired', { planName: plansDb[user.plan]?.name });
+            processed++;
+          } else {
+            // Simulated Stripe charge attempt!
+            const plansDb = getBillingPlans(currentDb);
+            const planDetails = plansDb[user.plan];
+            const amount = latestPaid.billing_cycle === 'annual' ? planDetails.annualPrice : planDetails.monthlyPrice;
+
+            // Simple probability math: 92% renewal charge success, 8% card declined / insufficient funds to simulate past_due behavior
+            const isChargeSuccess = Math.random() > 0.08;
+
+            if (isChargeSuccess) {
+              const invoiceId = 'inv_' + Math.random().toString(36).substr(2, 9);
+              const invoiceNum = `HIL-REN-${Math.floor(1000 + Math.random() * 9000)}`;
+              
+              userInvoices.push({
+                id: invoiceId,
+                invoice_number: invoiceNum,
+                amount,
+                currency: 'USD',
+                status: 'paid',
+                plan: user.plan,
+                billing_cycle: latestPaid.billing_cycle,
+                created_at: new Date().toISOString(),
+                paid_at: new Date().toISOString()
+              });
+
+              user.invoices = userInvoices;
+              user.billing_status = 'active';
+              userChanged = true;
+
+              sendBillingEmailSim(user.id, 'payment_success', {
+                planName: planDetails.name,
+                amount,
+                transactionId: 'ch_' + Math.random().toString(36).substr(2, 9),
+                invoiceNumber: invoiceNum
+              });
+
+              // Dispatch a secure webhook internally for programmatic updates
+              await sendWebhookEvent('invoice.paid', {
+                userId: user.id,
+                amount,
+                plan: user.plan,
+                billingCycle: latestPaid.billing_cycle,
+                invoiceId,
+              });
+
+              logSecurityEvent(user.id, '127.0.0.1', 'billing.subscription_renewed', `Subscription renewed successfully for $${amount}`);
+              processed++;
+            } else {
+              // Renewal Charge Failed! Enter "past_due" status
+              console.log(`[CRON ENGINE] Renewal charge failed for user ${user.email}. Attempting retry recovery...`);
+              user.billing_status = 'past_due';
+              userChanged = true;
+              failures++;
+
+              sendBillingEmailSim(user.id, 'payment_failed', {
+                planName: planDetails.name,
+                amount,
+                reason: 'Declined: Insufficient Funds. Automated retry schedule initiated.'
+              });
+
+              await sendWebhookEvent('invoice.payment_failed', {
+                userId: user.id,
+                amount,
+                plan: user.plan,
+                billingCycle: latestPaid.billing_cycle,
+                reason: 'Declined: Insufficient Funds'
+              });
+
+              logSecurityEvent(user.id, '127.0.0.1', 'billing.payment_attempt_failed', `Renewal payment attempt failed for plan: ${user.plan}`);
+            }
+          }
+        }
+      }
+    }
+
+    if (userChanged) {
+      saveDB();
     }
   }
 

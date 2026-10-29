@@ -51,21 +51,21 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#e0e0e0] flex items-center justify-center p-6 font-sans">
-      <div className="max-w-xl w-full bg-[#141414] rounded-3xl border border-[#262626] p-8 space-y-8 relative overflow-hidden shadow-2xl">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 flex items-center justify-center p-6 font-sans">
+      <div className="max-w-xl w-full bg-white dark:bg-[#151B28] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 space-y-8 relative overflow-hidden shadow-xl">
         {/* Glow effect */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#3E6F58]/5 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/[0.01] rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Steps indicator */}
-        <div className="flex items-center justify-between border-b border-[#262626] pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white/5 text-[#FAF8F5] rounded-lg flex items-center justify-center font-bold font-mono text-sm border border-white/10">
+            <div className="w-8 h-8 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-slate-100 rounded-lg flex items-center justify-center font-bold font-mono text-sm border border-slate-300 dark:border-white/10">
               {step}
             </div>
             <div>
-              <span className="text-xs uppercase tracking-widest text-[#a0a0a0] font-mono">Step {step} of 5</span>
-              <p className="text-xs font-semibold text-white">
+              <span className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 font-mono font-medium">Step {step} of 5</span>
+              <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                 {step === 1 && "Personalize Your Account"}
                 {step === 2 && "Communication Style Diagnosis"}
                 {step === 3 && "Difficult Scenario Focus"}
@@ -89,10 +89,10 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
           {step === 1 && (
             <div className="space-y-5 animate-fade-in">
               <div className="space-y-2">
-                <h3 className="text-2xl font-light font-serif text-white">
+                <h3 className="text-2xl font-light font-serif text-slate-900 dark:text-slate-100">
                   Welcome to <span className="font-serif italic text-white font-light">How It Lands</span>
                 </h3>
-                <p className="text-xs text-[#a0a0a0] leading-relaxed font-light">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-light">
                   We customize the strategic communication assistant specifically around your daily relationships and text dynamics. Where do you face difficult messages most?
                 </p>
               </div>
@@ -100,35 +100,35 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
               <div className="grid grid-cols-1 gap-3 pt-2">
                 <button 
                   onClick={() => setUseCase('personal')}
-                  className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${useCase === 'personal' ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-[#262626] text-[#a0a0a0] hover:border-[#333]'}`}
+                  className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${useCase === 'personal' ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-[#333]'}`}
                 >
                   <div>
-                    <p className="font-semibold text-sm text-white font-sans">Personal & Dating</p>
+                    <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 font-sans">Personal & Dating</p>
                     <p className="text-[11px] opacity-70 font-light mt-0.5">Breakups, dating apps, family discussions, friendship tensions.</p>
                   </div>
-                  {useCase === 'personal' && <CheckCircle2 className="w-5 h-5 text-white" />}
+                  {useCase === 'personal' && <CheckCircle2 className="w-5 h-5 text-sky-600 dark:text-cyan-400" />}
                 </button>
 
                 <button 
                   onClick={() => setUseCase('work')}
-                  className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${useCase === 'work' ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-[#262626] text-[#a0a0a0] hover:border-[#333]'}`}
+                  className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${useCase === 'work' ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-[#333]'}`}
                 >
                   <div>
-                    <p className="font-semibold text-sm text-white font-sans">Workplace & Clients</p>
+                    <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 font-sans">Workplace & Clients</p>
                     <p className="text-[11px] opacity-70 font-light mt-0.5">Overdue bills, boss negotiations, out-of-scope requests, salary asks.</p>
                   </div>
-                  {useCase === 'work' && <CheckCircle2 className="w-5 h-5 text-white" />}
+                  {useCase === 'work' && <CheckCircle2 className="w-5 h-5 text-sky-600 dark:text-cyan-400" />}
                 </button>
 
                 <button 
                   onClick={() => setUseCase('both')}
-                  className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${useCase === 'both' ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-[#262626] text-[#a0a0a0] hover:border-[#333]'}`}
+                  className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${useCase === 'both' ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-[#333]'}`}
                 >
                   <div>
-                    <p className="font-semibold text-sm text-white font-sans">Fully Blended (Both contexts)</p>
+                    <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 font-sans">Fully Blended (Both contexts)</p>
                     <p className="text-[11px] opacity-70 font-light mt-0.5">A comprehensive split profile analyzing professional and private texts.</p>
                   </div>
-                  {useCase === 'both' && <CheckCircle2 className="w-5 h-5 text-white" />}
+                  {useCase === 'both' && <CheckCircle2 className="w-5 h-5 text-sky-600 dark:text-cyan-400" />}
                 </button>
               </div>
             </div>
@@ -137,10 +137,10 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
           {step === 2 && (
             <div className="space-y-5 animate-fade-in">
               <div className="space-y-2">
-                <h3 className="text-xl font-light font-serif text-white">
+                <h3 className="text-xl font-light font-serif text-slate-900 dark:text-slate-100">
                   Identify your default <span className="italic font-light">communication tendencies</span>
                 </h3>
-                <p className="text-xs text-[#a0a0a0] leading-relaxed font-light">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-light">
                   How do you typically tend to come across when a message feels stressful or awkward? We calibrate feedback based on these presets.
                 </p>
               </div>
@@ -155,16 +155,16 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
                   <button
                     key={item.id}
                     onClick={() => setStyle(item.id)}
-                    className={`p-3.5 rounded-xl text-left border transition cursor-pointer ${style === item.id ? 'bg-white/5 border-white' : 'bg-[#1e1e1e] border-[#262626]'}`}
+                    className={`p-3.5 rounded-xl text-left border transition cursor-pointer ${style === item.id ? 'bg-white/5 border-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800'}`}
                   >
-                    <p className="text-xs font-bold text-white font-sans">{item.title}</p>
-                    <p className="text-[10px] text-[#a0a0a0] mt-1 font-light">{item.desc}</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100 font-sans">{item.title}</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 font-light">{item.desc}</p>
                   </button>
                 ))}
               </div>
 
               <div className="space-y-2 pt-1">
-                <p className="text-xs font-semibold text-[#a0a0a0]">Which behaviors do you want our AI strategist to proactively flag?</p>
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Which behaviors do you want our AI strategist to proactively flag?</p>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { id: 'overexplain', label: 'Overexplaining' },
@@ -177,7 +177,7 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
                     <button
                       key={p.id}
                       onClick={() => toggleOverdo(p.id)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono border transition cursor-pointer ${overdo.includes(p.id) ? 'bg-white/10 border-white text-white' : 'bg-[#1e1e1e] border-[#262626] text-[#a0a0a0]'}`}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-mono border transition cursor-pointer ${overdo.includes(p.id) ? 'bg-white/10 border-white text-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'}`}
                     >
                       {overdo.includes(p.id) ? '✓ ' : ''}{p.label}
                     </button>
@@ -190,10 +190,10 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
           {step === 3 && (
             <div className="space-y-5 animate-fade-in">
               <div className="space-y-2">
-                <h3 className="text-xl font-light font-serif text-white">
+                <h3 className="text-xl font-light font-serif text-slate-900 dark:text-slate-100">
                   What conversation type <span className="italic font-light">worries you most?</span>
                 </h3>
-                <p className="text-xs text-[#a0a0a0] leading-relaxed font-light">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-light">
                   We pre-configure your dashboard workspace and default scenarios around this selection.
                 </p>
               </div>
@@ -210,7 +210,7 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
                   <button
                     key={s.id}
                     onClick={() => setScenariosHelp(s.id)}
-                    className={`p-3.5 rounded-xl text-left border text-xs font-medium transition cursor-pointer ${scenariosHelp === s.id ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-[#262626] text-[#a0a0a0]'}`}
+                    className={`p-3.5 rounded-xl text-left border text-xs font-medium transition cursor-pointer ${scenariosHelp === s.id ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'}`}
                   >
                     {s.label}
                   </button>
@@ -222,10 +222,10 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
           {step === 4 && (
             <div className="space-y-5 animate-fade-in">
               <div className="space-y-2">
-                <h3 className="text-xl font-light font-serif text-white">
+                <h3 className="text-xl font-light font-serif text-slate-900 dark:text-slate-100">
                   Choose your default <span className="italic font-light">tone archetype</span>
                 </h3>
-                <p className="text-xs text-[#a0a0a0] leading-relaxed font-light">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-light">
                   When rewriting draft texts, how do you prefer the default strategic recommendation to feel?
                 </p>
               </div>
@@ -240,13 +240,13 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
                   <button
                     key={t.id}
                     onClick={() => setTonePref(t.id)}
-                    className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${tonePref === t.id ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-[#262626] text-[#a0a0a0] hover:border-[#333]'}`}
+                    className={`p-4 rounded-xl text-left border transition flex items-center justify-between cursor-pointer ${tonePref === t.id ? 'bg-white/5 border-white text-white' : 'bg-[#1e1e1e] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-[#333]'}`}
                   >
                     <div>
-                      <p className="text-xs font-bold text-white font-sans">{t.title}</p>
-                      <p className="text-[10px] text-[#a0a0a0] mt-1 font-light">{t.desc}</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 font-sans">{t.title}</p>
+                      <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 font-light">{t.desc}</p>
                     </div>
-                    {tonePref === t.id && <CheckCircle2 className="w-5 h-5 text-white" />}
+                    {tonePref === t.id && <CheckCircle2 className="w-5 h-5 text-sky-600 dark:text-cyan-400" />}
                   </button>
                 ))}
               </div>
@@ -255,31 +255,31 @@ export default function Onboarding({ user, onComplete }: OnboardingProps) {
 
           {step === 5 && (
             <div className="text-center space-y-4 animate-fade-in">
-              <div className="w-16 h-16 bg-white/5 text-white rounded-full flex items-center justify-center mx-auto shadow-md border border-white/10">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white rounded-full flex items-center justify-center mx-auto shadow-md border border-slate-200 dark:border-white/10">
                 <Sparkles className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-light font-serif text-white">
+                <h3 className="text-2xl font-light font-serif text-slate-900 dark:text-slate-100">
                   Calibration <span className="italic font-light">Complete!</span>
                 </h3>
-                <p className="text-xs text-[#a0a0a0] leading-relaxed max-w-sm mx-auto font-sans font-light">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm mx-auto font-sans font-light">
                   Your strategy engine is now fully tuned to your communication voice. You are ready to start analyzing texts and crafting pristine boundaries.
                 </p>
               </div>
-              <div className="bg-[#1e1e1e] border border-[#262626] p-4 rounded-xl text-xs max-w-xs mx-auto space-y-1.5 text-left font-mono">
-                <p className="text-[#a0a0a0]">✓ PROFILE PRESET: <span className="text-white uppercase">{style}</span></p>
-                <p className="text-[#a0a0a0]">✓ FLAGS: <span className="text-white uppercase">{overdo.join(', ')}</span></p>
-                <p className="text-[#a0a0a0]">✓ TARGET TONE: <span className="text-white uppercase">{tonePref}</span></p>
+              <div className="bg-[#1e1e1e] border border-slate-200 dark:border-slate-800 p-4 rounded-xl text-xs max-w-xs mx-auto space-y-1.5 text-left font-mono">
+                <p className="text-slate-600 dark:text-slate-400">✓ PROFILE PRESET: <span className="text-slate-900 dark:text-slate-100 uppercase font-semibold">{style}</span></p>
+                <p className="text-slate-600 dark:text-slate-400">✓ FLAGS: <span className="text-slate-900 dark:text-slate-100 uppercase font-semibold">{overdo.join(', ')}</span></p>
+                <p className="text-slate-600 dark:text-slate-400">✓ TARGET TONE: <span className="text-slate-900 dark:text-slate-100 uppercase font-semibold">{tonePref}</span></p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer controls */}
-        <div className="flex items-center justify-between border-t border-[#262626] pt-6">
+        <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-6">
           <button
             onClick={handleBack}
-            className={`flex items-center gap-2 text-xs font-semibold text-[#a0a0a0] hover:text-white transition bg-transparent border-none cursor-pointer ${step === 1 ? 'opacity-0 cursor-default pointer-events-none' : ''}`}
+            className={`flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-white transition bg-transparent border-none cursor-pointer ${step === 1 ? 'opacity-0 cursor-default pointer-events-none' : ''}`}
             disabled={step === 1}
           >
             <ArrowLeft className="w-4 h-4" />

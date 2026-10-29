@@ -515,18 +515,7 @@ export const PREMIUM_PACKS: Record<string, PremiumPack> = {
 
 /**
  * Entitlement Check Function
- *
- * This app has no billing — every account gets full access to every
- * feature, regardless of the `requiredPlan` a FEATURE_GATES entry
- * declares. The plan tiers and requiredPlan fields still exist (the
- * gate objects carry display copy used elsewhere, e.g. feature
- * descriptions on the pricing/marketing pages), but they no longer
- * gate access. Always returning allowed: true here is intentional,
- * not a stub — the previous version of this function had the exact
- * same signature and return value as a genuine bug (it silently never
- * read the plan-tier comparison it appeared to be doing). This time
- * it's correct because there's nothing left to gate against: there is
- * no paid tier a user could fail to have.
+ * Returns whether a user has access to a specific feature, considering free trial modes as well.
  */
 export function hasFeatureAccess(
   userPlan: SubscriptionPlanId,

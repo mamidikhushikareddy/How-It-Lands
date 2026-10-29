@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
+import { notify } from '../../../components/ui/Toast';
+import { authFetch } from '../../../lib/authStorage';
 
 interface Playbook {
   id: string;
@@ -26,32 +28,7 @@ interface Playbook {
   goal: string;
 }
 
-// Shape of a playbook as returned by the API (server/db/repositories/content.repo.ts) —
-// looser than the curated Playbook type above since admin-authored rows
-// don't populate every field (no scenario/goal, dos/donts can be empty).
-interface DbPlaybook {
-  id: string;
-  title: string;
-  category: string;
-  summary?: string;
-  tagline?: string;
-  critique?: string;
-  remedy?: string;
-  dos?: string[];
-  donts?: string[];
-  example_original?: string;
-  example_rewritten?: string;
-}
-
-interface PlaybooksProps {
-  // Admin-authored playbooks fetched from the database. Previously fetched
-  // into App.tsx but only ever passed to AdminPanel for editing — never
-  // actually rendered anywhere a regular user could see them, so anything
-  // an admin added here never reached real accounts.
-  dbPlaybooks?: DbPlaybook[];
-}
-
-export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
+export default function Playbooks() {
   const [activePlaybook, setActivePlaybook] = useState<string>('people-pleasing');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -329,7 +306,7 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
     setCalibrationResult(null);
 
     try {
-      const response = await fetch('/api/analyze', {
+      const response = await authFetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -373,65 +350,42 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
   });
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto p-2 font-sans pb-16 animate-fade-in text-[#FAF8F5]">
+    <div className="space-y-8 max-w-5xl mx-auto p-2 font-sans pb-16 animate-fade-in text-slate-900 dark:text-slate-100">
       {/* Title Header */}
-      <div className="border-b border-white/5 pb-5 space-y-1">
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-5 space-y-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] animate-pulse" />
-            <span className="text-[10px] uppercase font-mono tracking-widest text-[#a0a0a0] font-medium flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-white" />
+            <span className="w-2 h-2 rounded-full bg-sky-600 dark:bg-[#00E5FF] animate-pulse" />
+            <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-sky-700 dark:text-cyan-400" />
               INTERPERSONAL STRATEGY PLAYBOOKS
             </span>
           </div>
           <button
             onClick={() => setQuizActive(true)}
-            className="text-[10px] uppercase font-mono bg-[#00E5FF]/10 text-[#00E5FF] hover:bg-[#00E5FF]/20 px-3 py-1.5 rounded-lg border border-[#00E5FF]/20 transition flex items-center gap-1.5 cursor-pointer font-bold"
+            className="text-[10px] uppercase font-mono bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300 dark:bg-cyan-950/30 dark:hover:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-800/40 px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 cursor-pointer font-bold shadow-xs"
           >
-            <Sparkles className="w-3 h-3" />
+            <Sparkles className="w-3 h-3 text-sky-600 dark:text-cyan-400" />
             Strategy Matcher Quiz
           </button>
         </div>
-        <h1 className="text-2xl font-light font-serif text-white">Strategic Playbooks</h1>
-        <p className="text-xs text-[#a0a0a0] font-sans font-light">
+        <h1 className="text-2xl font-light font-serif text-slate-900 dark:text-slate-100">Strategic Playbooks</h1>
+        <p className="text-xs text-slate-600 dark:text-slate-400 font-sans font-light">
           Step-by-step communication playbooks calibrated with relational psychology, high-stakes negotiation framework, and boundary defense mechanisms.
         </p>
       </div>
 
-      {/* Admin-authored playbooks, pulled from the database */}
-      {dbPlaybooks.length > 0 && (
-        <div className="space-y-3">
-          <span className="text-[10px] uppercase font-mono tracking-widest text-[#a0a0a0] font-medium">Team Library</span>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {dbPlaybooks.map((pb) => (
-              <div key={pb.id} className="p-4 bg-[#141414] border border-[#262626] rounded-xl space-y-2">
-                <span className="text-[9px] uppercase font-mono bg-[#00E5FF]/5 text-[#00E5FF] px-2 py-0.5 rounded border border-[#00E5FF]/10 w-fit inline-block font-bold">
-                  {pb.category}
-                </span>
-                <h4 className="font-bold text-white text-sm">{pb.title}</h4>
-                {(pb.summary || pb.tagline) && (
-                  <p className="text-xs text-[#a0a0a0] leading-relaxed">{pb.summary || pb.tagline}</p>
-                )}
-                {pb.remedy && (
-                  <p className="text-xs text-[#FAF8F5]/90 leading-relaxed"><span className="text-[#00E5FF] font-semibold">Try this: </span>{pb.remedy}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Selector Quiz Modal/Overlay */}
       {quizActive && (
-        <div className="bg-[#FDF8E1] border border-[#EAE2A6] rounded-[24px] p-6 space-y-5 animate-fade-in shadow-xl text-[#111315]">
-          <div className="flex items-center justify-between border-b border-black/10 pb-3">
+        <div className="bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 animate-fade-in shadow-xl text-slate-900 dark:text-slate-100">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#E85D04]" />
-              <h3 className="text-xs uppercase font-mono tracking-wider font-semibold text-[#111315]">Strategy Selector Diagnostic</h3>
+              <Sparkles className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
+              <h3 className="text-xs uppercase font-mono tracking-wider font-semibold text-slate-900 dark:text-slate-100">Strategy Selector Diagnostic</h3>
             </div>
             <button 
               onClick={resetQuiz}
-              className="text-xs text-[#555555] hover:text-[#111315] transition bg-transparent border-none cursor-pointer"
+              className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition bg-transparent border-none cursor-pointer"
             >
               Exit Quiz
             </button>
@@ -440,47 +394,47 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
           {!quizRecommendation ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-[#555555]">STEP {quizStep + 1} OF {quizQuestions.length}</span>
+                <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400">STEP {quizStep + 1} OF {quizQuestions.length}</span>
                 <div className="flex gap-1">
                   {quizQuestions.map((_, idx) => (
                     <span 
                       key={idx} 
-                      className={`w-4 h-1 rounded ${idx <= quizStep ? 'bg-[#FFDD44]' : 'bg-black/10'}`} 
+                      className={`w-4 h-1 rounded ${idx <= quizStep ? 'bg-slate-900 dark:bg-cyan-400 font-semibold' : 'bg-slate-200 dark:bg-slate-800'}`} 
                     />
                   ))}
                 </div>
               </div>
 
-              <h4 className="text-sm font-medium text-[#111315]">{quizQuestions[quizStep].question}</h4>
+              <h4 className="text-sm font-medium text-slate-900 dark:text-slate-100">{quizQuestions[quizStep].question}</h4>
 
               <div className="grid grid-cols-1 gap-2.5">
                 {quizQuestions[quizStep].options.map((opt, i) => (
                   <button
                     key={i}
                     onClick={() => handleQuizAnswer(opt.value)}
-                    className="w-full text-left p-3.5 bg-white/60 hover:bg-[#F9F0CD] border border-[#EAE2A6] hover:border-[#D2C58A] text-xs text-[#111315] rounded-xl transition flex items-center justify-between cursor-pointer shadow-sm"
+                    className="w-full text-left p-3.5 bg-slate-50 hover:bg-slate-100 dark:bg-[#1E293B] dark:hover:bg-[#273449] border border-slate-200 dark:border-slate-700 hover:border-sky-500 dark:hover:border-cyan-400 text-xs text-slate-900 dark:text-slate-100 rounded-xl transition flex items-center justify-between cursor-pointer shadow-xs"
                   >
                     <span>{opt.label}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#111315]/40" />
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                   </button>
                 ))}
               </div>
             </div>
           ) : (
             <div className="space-y-4 text-center py-4">
-              <div className="w-12 h-12 bg-emerald-500/10 text-emerald-700 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
+              <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-full flex items-center justify-center mx-auto border border-emerald-300 dark:border-emerald-800">
                 <Check className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h4 className="text-sm font-semibold text-[#111315]">Diagnostic Recommendation Generated</h4>
-                <p className="text-xs text-[#555555] max-w-md mx-auto">
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Diagnostic Recommendation Generated</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
                   Based on your situation, we recommend deploying the following communication framework immediately:
                 </p>
               </div>
 
-              <div className="p-4 bg-white border border-[#EAE2A6] rounded-xl max-w-sm mx-auto space-y-1">
-                <span className="text-[9px] uppercase font-mono text-[#555555]">Recommended Framework</span>
-                <h5 className="font-serif text-[#E85D04] text-sm font-medium">
+              <div className="p-4 bg-slate-50 dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-xl max-w-sm mx-auto space-y-1">
+                <span className="text-[9px] uppercase font-mono text-slate-500 dark:text-slate-400">Recommended Framework</span>
+                <h5 className="font-serif text-sky-700 dark:text-cyan-400 text-sm font-semibold">
                   {playbooks.find(p => p.id === quizRecommendation)?.title}
                 </h5>
               </div>
@@ -502,7 +456,7 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                 </Button>
                 <button
                   onClick={resetQuiz}
-                  className="px-4 py-2 text-xs text-[#555555] hover:text-[#111315] transition bg-transparent border-none cursor-pointer font-medium"
+                  className="px-4 py-2 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition bg-transparent border-none cursor-pointer font-medium"
                 >
                   Start Over
                 </button>
@@ -518,44 +472,49 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
         {/* Left Column: Directory List & Power Swaps Cheat Sheet */}
         <div className="lg:col-span-4 space-y-6">
           <div className="space-y-2.5">
-            <span className="text-[9px] font-mono uppercase text-[#888] tracking-wider">Playbook Frameworks</span>
+            <span className="text-[9px] font-mono uppercase text-slate-500 dark:text-slate-400 tracking-wider font-semibold block">Playbook Frameworks</span>
             <div className="space-y-2.5">
-              {playbooks.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setActivePlaybook(p.id);
-                    setUserDraft('');
-                    setCalibrationResult(null);
-                  }}
-                  className={`w-full p-4 rounded-[20px] text-left border transition flex flex-col justify-between text-xs cursor-pointer ${
-                    activePlaybook === p.id 
-                      ? 'bg-[#FFDD44] border-[#E5C110] text-[#111315] shadow-sm font-semibold' 
-                      : 'bg-[#FDF8E1] border-[#EAE2A6] text-[#555555] hover:bg-[#F9F0CD] hover:border-[#D2C58A]'
-                  }`}
-                >
-                  <div className="space-y-1 font-sans">
-                    <span className={`text-[8px] font-mono uppercase tracking-wider font-bold ${
-                      activePlaybook === p.id ? 'text-[#111315]/80' : 'text-[#888]'
-                    }`}>
-                      {p.category}
-                    </span>
-                    <h4 className="font-serif text-sm leading-snug text-[#111315]">{p.title}</h4>
-                    <p className={`text-[10px] font-light line-clamp-2 leading-relaxed mt-1 ${
-                      activePlaybook === p.id ? 'text-[#111315]/80' : 'text-[#555555]'
-                    }`}>{p.tagline}</p>
-                  </div>
-                </button>
-              ))}
+              {playbooks.map((p) => {
+                const isSelected = activePlaybook === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setActivePlaybook(p.id);
+                      setUserDraft('');
+                      setCalibrationResult(null);
+                    }}
+                    className={`w-full p-4 rounded-2xl text-left border transition-all duration-150 flex flex-col justify-between text-xs cursor-pointer ${
+                      isSelected 
+                        ? 'bg-sky-50/80 dark:bg-[#1E293B] border-sky-600 dark:border-cyan-400 text-slate-900 dark:text-slate-100 shadow-sm ring-1 ring-sky-600/20 dark:ring-cyan-400/20' 
+                        : 'bg-white dark:bg-[#151B28] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1A2234] hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="space-y-1.5 font-sans">
+                      <span className={`text-[9px] font-mono uppercase tracking-wider font-bold block ${
+                        isSelected ? 'text-sky-700 dark:text-cyan-400' : 'text-slate-500 dark:text-slate-400'
+                      }`}>
+                        {p.category}
+                      </span>
+                      <h4 className={`font-serif text-sm leading-snug ${
+                        isSelected ? 'text-slate-900 dark:text-white font-semibold' : 'text-slate-800 dark:text-slate-200 font-medium'
+                      }`}>{p.title}</h4>
+                      <p className={`text-[11px] font-light line-clamp-2 leading-relaxed ${
+                        isSelected ? 'text-slate-700 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'
+                      }`}>{p.tagline}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Strategic Vocabulary Cheat Sheet */}
-          <div className="bg-[#FDF8E1] border border-[#EAE2A6] rounded-[24px] p-5 space-y-4 text-[#111315]">
+          <div className="bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl p-5 space-y-4 text-slate-900 dark:text-slate-100">
             <div className="space-y-1">
-              <span className="text-[9px] font-mono text-[#E85D04] uppercase tracking-wider block font-bold">The Strategic Vocabulary</span>
-              <h3 className="text-xs font-semibold text-[#111315]">Power Phrase Swaps</h3>
-              <p className="text-[10px] text-[#555555] leading-relaxed font-sans font-light">Instantly upgrade weak passive habits to executive confidence.</p>
+              <span className="text-[9px] font-mono text-sky-700 dark:text-cyan-400 uppercase tracking-wider block font-bold">The Strategic Vocabulary</span>
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Power Phrase Swaps</h3>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans font-light">Instantly upgrade weak passive habits to executive confidence.</p>
             </div>
 
             {/* Swap Category Tabs */}
@@ -566,8 +525,8 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                   onClick={() => setSwapTab(cat)}
                   className={`text-[9px] font-mono px-2.5 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer ${
                     swapTab === cat 
-                      ? 'bg-[#FFDD44] text-[#111315] font-bold border border-[#E5C110]/20' 
-                      : 'bg-white/60 text-[#555555] hover:text-[#111315] hover:bg-[#F9F0CD] border border-[#EAE2A6]'
+                      ? 'bg-sky-50 dark:bg-[#1E293B] text-sky-900 dark:text-cyan-300 font-bold border border-sky-600 dark:border-cyan-400 shadow-xs' 
+                      : 'bg-slate-100 dark:bg-[#1E293B] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   {cat}
@@ -577,42 +536,42 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
 
             {/* Search filter input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-[#111315]/40 absolute left-2.5 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-2.5 top-2.5" />
               <input
                 type="text"
                 placeholder="Search phrase swaps..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#EAE2A6] text-[10px] text-[#111315] placeholder-[#888] rounded-xl focus:outline-none focus:border-[#D2C58A] font-sans font-light"
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-[#10141C] border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl focus:outline-none focus:border-sky-500 dark:focus:border-cyan-400 font-sans font-light"
               />
             </div>
 
             {/* List of Swaps */}
             <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
               {filteredSwaps.length === 0 ? (
-                <p className="text-[10px] text-center text-[#888] py-3 font-sans font-light">No matching phrases found.</p>
+                <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 py-3 font-sans font-light">No matching phrases found.</p>
               ) : (
                 filteredSwaps.map((swap, idx) => (
-                  <div key={idx} className="bg-white/60 p-3.5 rounded-xl border border-[#EAE2A6] space-y-2 relative group hover:border-[#D2C58A] transition">
-                    <span className="text-[8px] font-mono text-[#555555] uppercase tracking-widest">{swap.category}</span>
+                  <div key={idx} className="bg-slate-50 dark:bg-[#1E293B] p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 relative group hover:border-slate-300 dark:hover:border-slate-700 transition">
+                    <span className="text-[8px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold">{swap.category}</span>
                     <div className="space-y-1">
-                      <p className="text-[10px] text-[#C97A7A] line-through font-sans italic opacity-90">
+                      <p className="text-[10px] text-rose-700 dark:text-rose-400 line-through font-sans italic opacity-90">
                         "{swap.weak}"
                       </p>
-                      <p className="text-[11px] text-[#111315] font-serif font-medium leading-relaxed">
+                      <p className="text-[11px] text-slate-900 dark:text-slate-100 font-serif font-medium leading-relaxed">
                         "{swap.strategic}"
                       </p>
                     </div>
-                    <p className="text-[9px] text-[#555555] border-t border-black/5 pt-1.5 font-light font-sans">
+                    <p className="text-[9px] text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 pt-1.5 font-light font-sans">
                       {swap.rationale}
                     </p>
                     <button
                       onClick={() => handleCopy(swap.strategic, idx)}
-                      className="absolute top-2.5 right-2.5 text-[#555555] hover:text-[#111315] opacity-0 group-hover:opacity-100 transition bg-transparent border-none cursor-pointer"
+                      className="absolute top-2.5 right-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 opacity-0 group-hover:opacity-100 transition bg-transparent border-none cursor-pointer"
                       title="Copy Strategic Swap"
                     >
                       {copiedIndex === idx ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
                       ) : (
                         <Copy className="w-3.5 h-3.5" />
                       )}
@@ -625,57 +584,57 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
         </div>
 
         {/* Right Column: Detailed Playbook Display & Simulator */}
-        <div className="lg:col-span-8 bg-[#FDF8E1] border border-[#EAE2A6] p-6 rounded-[24px] space-y-6 text-[#111315]">
+        <div className="lg:col-span-8 bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-2xl space-y-6 text-slate-900 dark:text-slate-100">
           
           {/* Header walk-through */}
-          <div className="border-b border-black/10 pb-5 space-y-1">
-            <span className="text-[9px] uppercase font-mono text-[#E85D04] tracking-widest block font-bold">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-5 space-y-1">
+            <span className="text-[9px] uppercase font-mono text-sky-700 dark:text-cyan-400 tracking-widest block font-bold">
               {active.category} PLAYBOOK
             </span>
-            <h2 className="text-xl font-serif font-semibold text-[#111315]">{active.title}</h2>
-            <p className="text-xs text-[#555555] font-light font-sans italic">"{active.tagline}"</p>
+            <h2 className="text-xl font-serif font-semibold text-slate-900 dark:text-slate-100">{active.title}</h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-light font-sans italic">"{active.tagline}"</p>
           </div>
 
-          {/* Social Chemistry Critique */}
+          {/* Social Chemistry Critique (The Friction Point) */}
           <div className="space-y-2">
-            <h4 className="text-[10px] uppercase font-mono font-semibold tracking-wider text-[#C97A7A]">
+            <h4 className="text-[10px] uppercase font-mono font-bold tracking-wider text-rose-700 dark:text-rose-400">
               The Friction Point (Why standard texts fail)
             </h4>
-            <p className="text-xs text-[#555555] leading-relaxed bg-white/40 p-4 rounded-xl border border-[#EAE2A6] font-sans font-light">
+            <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed bg-rose-50/70 dark:bg-rose-950/20 p-4 rounded-xl border border-rose-200 dark:border-rose-900/40 font-sans font-light">
               {active.critique}
-            </p>
+            </div>
           </div>
 
-          {/* Remedy */}
+          {/* Remedy (The Strategic Shift) */}
           <div className="space-y-2">
-            <h4 className="text-[10px] uppercase font-mono font-semibold tracking-wider text-[#E85D04]">
+            <h4 className="text-[10px] uppercase font-mono font-bold tracking-wider text-sky-700 dark:text-cyan-400">
               The Strategic Shift
             </h4>
-            <p className="text-xs text-[#111315] leading-relaxed font-sans font-light pl-1">
+            <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed bg-sky-50/60 dark:bg-sky-950/20 p-4 rounded-xl border border-sky-200 dark:border-sky-900/40 font-sans font-light">
               {active.remedy}
-            </p>
+            </div>
           </div>
 
           {/* Dos vs Donts */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-[#3E6F58]/5 border border-[#3E6F58]/20 p-4 rounded-xl space-y-2">
-              <span className="text-[10px] font-mono uppercase font-semibold text-emerald-700">Do This:</span>
+            <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 p-4 rounded-xl space-y-2.5">
+              <span className="text-[10px] font-mono uppercase font-bold text-emerald-800 dark:text-emerald-400">Do This:</span>
               <ul className="space-y-2 text-xs">
                 {active.dos.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[#333333] font-sans font-light">
-                    <span className="text-emerald-700 font-bold">✓</span>
+                  <li key={i} className="flex items-start gap-2 text-slate-800 dark:text-slate-200 font-sans font-light">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="bg-[#C97A7A]/5 border border-[#C97A7A]/20 p-4 rounded-xl space-y-2">
-              <span className="text-[10px] font-mono uppercase font-semibold text-rose-700">Avoid This:</span>
+            <div className="bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 p-4 rounded-xl space-y-2.5">
+              <span className="text-[10px] font-mono uppercase font-bold text-rose-800 dark:text-rose-400">Avoid This:</span>
               <ul className="space-y-2 text-xs">
                 {active.donts.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[#333333] font-sans font-light">
-                    <span className="text-rose-700 font-bold">✕</span>
+                  <li key={i} className="flex items-start gap-2 text-slate-800 dark:text-slate-200 font-sans font-light">
+                    <span className="text-rose-600 dark:text-rose-400 font-bold">✕</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -684,31 +643,31 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
           </div>
 
           {/* Example Side-by-side translation */}
-          <div className="border-t border-black/10 pt-5 space-y-4">
-            <span className="text-[9px] font-mono uppercase text-[#555555] tracking-widest block font-medium">
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-5 space-y-4">
+            <span className="text-[9px] font-mono uppercase text-slate-600 dark:text-slate-400 tracking-widest block font-medium">
               EXAMPLE INTERACTION TRANSFORMATION
             </span>
             
             <div className="space-y-4 font-sans font-light">
-              <div className="bg-white/40 p-4 rounded-xl border border-[#EAE2A6] space-y-1.5">
-                <span className="text-[8px] text-[#C97A7A] font-mono uppercase tracking-wider block font-bold">Standard Weak Draft (High Excuses / Overexplain)</span>
-                <p className="text-xs text-[#555555] italic leading-relaxed font-serif">
+              <div className="bg-slate-50 dark:bg-[#1E293B] p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <span className="text-[8px] text-rose-700 dark:text-rose-400 font-mono uppercase tracking-wider block font-bold">Standard Weak Draft (High Excuses / Overexplain)</span>
+                <p className="text-xs text-slate-700 dark:text-slate-300 italic leading-relaxed font-serif">
                   "{active.example_original}"
                 </p>
               </div>
 
-              <div className="bg-[#FFDD44]/10 p-4 rounded-xl border border-[#E5C110]/20 space-y-1.5 relative group">
-                <span className="text-[8px] text-[#E85D04] font-mono uppercase tracking-wider block font-bold">Calibrated Version (Strategic Framing)</span>
-                <p className="text-xs text-[#111315] italic font-serif leading-relaxed">
+              <div className="bg-sky-50/60 dark:bg-[#1E293B] p-4 rounded-xl border border-sky-300 dark:border-cyan-500/40 space-y-1.5 relative group shadow-xs">
+                <span className="text-[8px] text-sky-700 dark:text-cyan-400 font-mono uppercase tracking-wider block font-bold">Calibrated Version (Strategic Framing)</span>
+                <p className="text-xs text-slate-900 dark:text-slate-100 italic font-serif leading-relaxed font-medium">
                   "{active.example_rewritten}"
                 </p>
                 <button 
                   onClick={() => handleCopy(active.example_rewritten, 999)}
-                  className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-white/60 border border-[#EAE2A6] text-[9px] text-[#555555] font-mono hover:text-[#111315] hover:border-[#D2C58A] transition opacity-0 group-hover:opacity-100 flex items-center gap-1 bg-transparent cursor-pointer"
+                  className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-white dark:bg-[#151B28] border border-slate-200 dark:border-slate-700 text-[9px] text-slate-700 dark:text-slate-300 font-mono hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600 transition flex items-center gap-1 cursor-pointer shadow-xs"
                 >
                   {copiedIndex === 999 ? (
                     <>
-                      <Check className="w-3 h-3 text-emerald-700" />
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       COPIED
                     </>
                   ) : (
@@ -723,17 +682,17 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
           </div>
 
           {/* Interactive Draft Simulator Sandbox */}
-          <div className="border-t border-black/10 pt-6 space-y-4">
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-6 space-y-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#E85D04]" />
-              <span className="text-[10px] font-mono uppercase text-[#111315] tracking-widest font-semibold">Playbook Draft Simulator</span>
+              <Sparkles className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
+              <span className="text-[10px] font-mono uppercase text-slate-900 dark:text-slate-100 tracking-widest font-semibold">Playbook Draft Simulator</span>
             </div>
             
-            <div className="bg-white/40 p-5 rounded-2xl border border-[#EAE2A6] space-y-4">
+            <div className="bg-slate-50 dark:bg-[#1E293B] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div>
-                <h3 className="text-xs font-semibold text-[#111315]">Test Your Real-World Draft</h3>
-                <p className="text-[11px] text-[#555555] leading-relaxed font-sans font-light">
-                  Type or paste the raw, tentative message you are planning to send. Our strategy engine will run a full cryptographic-style calibration audit against this specific playbook.
+                <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">Test Your Real-World Draft</h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans font-light">
+                  Type or paste the raw, tentative message you are planning to send. Our strategy engine will run a full calibration audit against this specific playbook.
                 </p>
               </div>
 
@@ -741,7 +700,7 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                 value={userDraft}
                 onChange={(e) => setUserDraft(e.target.value)}
                 placeholder={`Type your awkward draft for "${active.title}"...`}
-                className="w-full h-24 p-3.5 bg-[#ffffff] border border-[#EAE2A6] focus:border-[#D2C58A] rounded-xl text-xs text-[#111315] focus:outline-none placeholder-[#888] font-sans font-light resize-none"
+                className="w-full h-24 p-3.5 bg-white dark:bg-[#151B28] border border-slate-300 dark:border-slate-700 focus:border-sky-500 dark:focus:border-cyan-400 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 font-sans resize-none shadow-xs"
               />
 
               <div className="flex items-center justify-between gap-3">
@@ -750,8 +709,7 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                   disabled={isCalibrating || !userDraft.trim()}
                   variant="primary"
                   size="sm"
-                  style={{ backgroundColor: '#ffdd44', borderWidth: '2px', borderStyle: 'solid', borderColor: '#ff9f00', color: '#000000' }}
-                  className="flex items-center gap-2 rounded-xl hover:opacity-90"
+                  className="flex items-center gap-2 rounded-xl"
                 >
                   {isCalibrating ? (
                     <>
@@ -769,7 +727,7 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                 {userDraft && (
                   <button
                     onClick={() => { setUserDraft(''); setCalibrationResult(null); }}
-                    className="text-[11px] text-[#555555] hover:text-[#111315] transition bg-transparent border-none cursor-pointer"
+                    className="text-[11px] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition bg-transparent border-none cursor-pointer"
                   >
                     Clear Draft
                   </button>
@@ -777,21 +735,20 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
               </div>
 
               {calibrationError && (
-                <div className="p-3 bg-red-950/10 text-red-700 border border-red-900/20 text-xs rounded-xl flex items-center gap-2 font-sans">
-                  <AlertCircle className="w-4 h-4 text-red-700 flex-shrink-0" />
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 text-xs rounded-xl flex items-center gap-2 font-sans">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
                   <span>{calibrationError}</span>
                 </div>
               )}
 
               {calibrationResult && (
-                <div className="space-y-5 pt-4 border-t border-black/10 animate-fade-in">
+                <div className="space-y-5 pt-4 border-t border-slate-200 dark:border-slate-800 animate-fade-in">
                   <div className="flex items-center justify-between font-sans">
-                    <span className="text-[10px] font-mono text-[#555555]">CALIBRATION SCOREBOARD</span>
+                    <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400 font-semibold">CALIBRATION SCOREBOARD</span>
                     <span className={`text-[9px] font-mono uppercase px-2.5 py-1 rounded-full font-bold border ${
-                      calibrationResult.summary?.landing_status === 'well' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20' :
-                      calibrationResult.summary?.landing_status === 'neutral' ? 'bg-amber-500/10 text-amber-700 border-amber-500/20' :
-                      calibrationResult.summary?.landing_status === 'poor' ? 'bg-rose-500/10 text-rose-700 border-rose-500/20' :
-                      'bg-rose-50/40 text-rose-700 border border-rose-900/40'
+                      calibrationResult.summary?.landing_status === 'well' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' :
+                      calibrationResult.summary?.landing_status === 'neutral' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' :
+                      'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30'
                     }`}>
                       Landing Status: {calibrationResult.summary?.landing_status || 'risky'}
                     </span>
@@ -800,11 +757,11 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                   {/* Calibration Scores */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {(calibrationResult.scores || []).slice(0, 4).map((score: any, index: number) => (
-                      <div key={index} className="bg-white p-3 rounded-xl border border-[#EAE2A6] text-center">
-                        <span className="text-[9px] text-[#555555] font-mono block truncate">{score.dimension}</span>
+                      <div key={index} className="bg-white dark:bg-[#151B28] p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-center shadow-xs">
+                        <span className="text-[9px] text-slate-600 dark:text-slate-400 font-mono block truncate">{score.dimension}</span>
                         <div className="flex items-baseline justify-center gap-1 mt-1">
-                          <span className="text-sm font-semibold font-mono text-[#111315]">{score.score}</span>
-                          <span className="text-[9px] text-[#555555]">/100</span>
+                          <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100">{score.score}</span>
+                          <span className="text-[9px] text-slate-500 dark:text-slate-400">/100</span>
                         </div>
                       </div>
                     ))}
@@ -813,24 +770,24 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                   {/* Subtext and Impressions */}
                   <div className="space-y-3.5 text-xs font-sans">
                     <div className="space-y-1.5">
-                      <h4 className="text-[10px] font-mono uppercase text-[#111315] font-semibold font-sans">Immediate Subtext (What they hear):</h4>
-                      <p className="text-[#111315] bg-white p-3 rounded-xl border border-[#EAE2A6] italic font-serif font-light leading-relaxed">
+                      <h4 className="text-[10px] font-mono uppercase text-slate-900 dark:text-slate-100 font-semibold font-sans">Immediate Subtext (What they hear):</h4>
+                      <p className="text-slate-900 dark:text-slate-100 bg-white dark:bg-[#151B28] p-3 rounded-xl border border-slate-200 dark:border-slate-700 italic font-serif font-light leading-relaxed shadow-xs">
                         "{calibrationResult.how_it_may_be_read?.subtext || calibrationResult.summary?.overall_read || "The message may broadcast standard apologetic hesitation."}"
                       </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 font-light">
                       <div className="space-y-1.5">
-                        <h4 className="text-[10px] font-mono uppercase text-emerald-700 font-semibold font-sans">Whats Working:</h4>
-                        <ul className="text-[11px] text-[#555555] space-y-1.5 list-disc list-inside bg-white p-3 rounded-xl border border-[#EAE2A6]">
+                        <h4 className="text-[10px] font-mono uppercase text-emerald-700 dark:text-emerald-400 font-semibold font-sans">Whats Working:</h4>
+                        <ul className="text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5 list-disc list-inside bg-white dark:bg-[#151B28] p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
                           {(calibrationResult.whats_working || ["Clean initial sentence context"]).map((w: string, i: number) => (
                             <li key={i}>{w}</li>
                           ))}
                         </ul>
                       </div>
                       <div className="space-y-1.5">
-                        <h4 className="text-[10px] font-mono uppercase text-rose-700 font-semibold font-sans font-light">Friction Points:</h4>
-                        <ul className="text-[11px] text-[#555555] space-y-1.5 list-disc list-inside bg-white p-3 rounded-xl border border-[#EAE2A6]">
+                        <h4 className="text-[10px] font-mono uppercase text-rose-700 dark:text-rose-400 font-semibold font-sans font-light">Friction Points:</h4>
+                        <ul className="text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5 list-disc list-inside bg-white dark:bg-[#151B28] p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
                           {(calibrationResult.whats_risky || ["Contains apologetic cues", "Overexplains personal constraints"]).map((w: string, i: number) => (
                             <li key={i}>{w}</li>
                           ))}
@@ -841,9 +798,9 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
 
                   {/* Dynamic rewrite crafted for this playbook context */}
                   <div className="pt-2 font-sans">
-                    <div className="bg-[#FFDD44]/10 p-4 rounded-xl border border-[#E5C110]/20 space-y-2 relative group">
-                      <span className="text-[9px] text-[#111315] font-mono uppercase tracking-wider block font-bold">CUSTOM PLAYBOOK REWRITE (RECOMMENDED)</span>
-                      <p className="text-xs text-[#111315] italic font-serif font-light leading-relaxed">
+                    <div className="bg-sky-50/60 dark:bg-[#151B28] p-4 rounded-xl border border-sky-300 dark:border-cyan-500/40 space-y-2 relative group shadow-xs">
+                      <span className="text-[9px] text-sky-700 dark:text-cyan-400 font-mono uppercase tracking-wider block font-bold">CUSTOM PLAYBOOK REWRITE (RECOMMENDED)</span>
+                      <p className="text-xs text-slate-900 dark:text-slate-100 italic font-serif leading-relaxed">
                         "{calibrationResult.rewrites?.find((r: any) => r.type === 'confident' || r.type === 'best')?.content || calibrationResult.rewrites?.[0]?.content || 'Calibrating alternative text...'}"
                       </p>
                       <button 
@@ -851,10 +808,10 @@ export default function Playbooks({ dbPlaybooks = [] }: PlaybooksProps) {
                           const rewrite = calibrationResult.rewrites?.find((r: any) => r.type === 'confident' || r.type === 'best')?.content || calibrationResult.rewrites?.[0]?.content;
                           if (rewrite) {
                             navigator.clipboard.writeText(rewrite);
-                            alert("Calibrated rewrite copied to clipboard!");
+                            notify("Calibrated rewrite copied to clipboard!", "success");
                           }
                         }}
-                        className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-white/60 border border-[#EAE2A6] text-[9px] text-[#555555] font-mono hover:text-[#111315] hover:border-[#D2C58A] transition cursor-pointer"
+                        className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-[9px] text-slate-700 dark:text-slate-300 font-mono hover:text-slate-900 dark:hover:text-white transition cursor-pointer shadow-xs"
                       >
                         COPY REWRITE
                       </button>
