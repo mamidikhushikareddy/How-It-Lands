@@ -46,6 +46,7 @@ import { sendEmailVerificationCode, sendEmailPasswordReset } from './server/emai
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Increased payload size limitation to support screenshots and voice recordings
 app.use(express.json({ limit: '50mb' }));
@@ -447,6 +448,755 @@ async function callGeminiWithRetry(
 }
 
 /**
+ * Safe user sanitizer for client responses (strips credential secrets)
+ */
+function sanitizeUser(u: any) {
+  if (!u) return null;
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    plan: u.plan || 'free',
+    role: u.role || 'user',
+    created_at: u.created_at,
+    onboarding_completed: u.onboarding_completed ?? false,
+    usage_count_month: u.usage_count_month || 0,
+    credit_balance: u.credit_balance || 100,
+    billing_customer_id: u.billing_customer_id || null,
+    billing_status: u.billing_status || null,
+    email_verified: u.email_verified ?? true,
+    status: u.status || 'active',
+    two_factor_enabled: u.two_factor_enabled || false,
+    oauth_provider: u.oauth_provider || null,
+    oauth_id: u.oauth_id || null,
+    trial_active: u.trial_active || false,
+    trial_start_date: u.trial_start_date || null
+  };
+}
+
+// In-memory store for pending 2FA challenges
+const pending2faTokens = new Map<string, { userId: string; expiresAt: number }>();
+
+/**
+ * ============================================================
+ * AUTHENTICATION ROUTING: LOGIN, SIGNUP, SESSION & MFA ENDPOINTS
+ * ============================================================
+ */
+
+/**
+ * POST /api/auth/login
+ * Authenticates users via email and password with brute-force protection, account lockout, and MFA check
+ */
+app.post('/api/auth/login', (req: any, res) => {
+  const { email, password, rememberMe } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const cleanEmail = String(email).toLowerCase().trim();
+  const user = (currentDb.users || []).find(
+    (u: any) => u.email.toLowerCase() === cleanEmail
+  );
+
+  if (!user) {
+    logSecurityEvent(undefined, req.ip, 'auth.login_failed', `Unknown email attempt: ${cleanEmail}`);
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  // Account Lockout check (5 failed attempts within 15 minutes)
+  if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    const minutesLeft = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 60000);
+    logSecurityEvent(user.id, req.ip, 'auth.locked_attempt', `Locked account login attempt for user: ${user.email}`);
+    return res.status(423).json({
+      error: `Account is temporarily locked due to excessive failed attempts. Please retry in ${minutesLeft} minute(s).`
+    });
+  }
+
+  // Password verification
+  let passwordMatches = false;
+  const userSalt = user.password_salt || user.salt;
+  if (user.password_hash && userSalt) {
+    const candidateHash = hashPassword(password, userSalt);
+    passwordMatches = (candidateHash === user.password_hash);
+  } else if (!user.password_hash) {
+    // Legacy seed user without password set: initialize with provided password
+    const salt = generateSalt();
+    user.password_salt = salt;
+    user.salt = salt;
+    user.password_hash = hashPassword(password, salt);
+    user.recent_passwords = [user.password_hash];
+    passwordMatches = true;
+  }
+
+  if (!passwordMatches) {
+    user.failed_login_attempts = (user.failed_login_attempts || 0) + 1;
+    if (user.failed_login_attempts >= 5) {
+      user.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      logSecurityEvent(user.id, req.ip, 'auth.account_locked', `User account locked after 5 failed attempts: ${user.email}`);
+    } else {
+      logSecurityEvent(user.id, req.ip, 'auth.login_failed', `Incorrect password attempt for user: ${user.email}. Failed attempts: ${user.failed_login_attempts}`);
+    }
+    saveDB();
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  // Check 2FA challenge
+  if (user.two_factor_enabled && user.two_factor_secret) {
+    const preAuthToken = 'pre_' + crypto.randomBytes(24).toString('hex');
+    pending2faTokens.set(preAuthToken, {
+      userId: user.id,
+      expiresAt: Date.now() + 5 * 60 * 1000
+    });
+    return res.json({
+      success: true,
+      two_factor_required: true,
+      pre_auth_token: preAuthToken
+    });
+  }
+
+  // Successful login
+  user.failed_login_attempts = 0;
+  user.locked_until = null;
+  user.last_login = new Date().toISOString();
+  saveDB();
+
+  const token = createSession(user.id);
+  const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+  setSecureCookie(res, req, 'session_id', token, maxAge);
+  res.setHeader('X-New-Session-ID', token);
+
+  let profile = (currentDb.user_profiles || []).find((p: any) => p.user_id === user.id);
+  if (!profile) {
+    profile = {
+      user_id: user.id,
+      communication_style: 'warm',
+      overdo_patterns: [],
+      preferred_tone: 'kind but direct',
+      preserve_voice: true,
+      favorite_phrases: [],
+      avoided_phrases: [],
+      default_scenario: 'general',
+      notes: '',
+      timezone: 'UTC',
+      locale: 'en-US',
+      email_notifications_enabled: true,
+      security_alerts_enabled: true,
+      monthly_reports_enabled: false,
+      ui_density: 'comfortable'
+    };
+    if (!currentDb.user_profiles) currentDb.user_profiles = [];
+    currentDb.user_profiles.push(profile);
+    saveDB();
+  }
+
+  logSecurityEvent(user.id, req.ip, 'auth.login', `User logged in successfully: ${user.email}`);
+
+  return res.json({
+    success: true,
+    token,
+    sessionId: token,
+    user: sanitizeUser(user),
+    profile
+  });
+});
+
+/**
+ * POST /api/auth/signup
+ * Registers a new user account with secure salt, password hash, and email verification
+ */
+app.post('/api/auth/signup', (req: any, res) => {
+  const { name, email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  const cleanEmail = String(email).toLowerCase().trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+
+  const strengthCheck = validatePasswordStrength(password);
+  if (!strengthCheck.isValid) {
+    return res.status(400).json({ error: strengthCheck.error });
+  }
+
+  const currentDb = loadDB() as any;
+  if (!currentDb.users) currentDb.users = [];
+  if (!currentDb.user_profiles) currentDb.user_profiles = [];
+  if (!currentDb.email_verification_tokens) currentDb.email_verification_tokens = [];
+
+  const existing = currentDb.users.find((u: any) => u.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    return res.status(409).json({ error: 'An account with this email address already exists. Please sign in.' });
+  }
+
+  const salt = generateSalt();
+  const password_hash = hashPassword(password, salt);
+  const userId = 'u_' + crypto.randomBytes(8).toString('hex');
+  const cleanName = (name && typeof name === 'string' && name.trim()) ? name.trim() : cleanEmail.split('@')[0];
+
+  const newUser: any = {
+    id: userId,
+    name: cleanName,
+    email: cleanEmail,
+    plan: 'free',
+    role: 'user',
+    created_at: new Date().toISOString(),
+    onboarding_completed: false,
+    usage_count_month: 0,
+    billing_customer_id: null,
+    billing_status: null,
+    email_verified: false,
+    status: 'active',
+    failed_login_attempts: 0,
+    locked_until: null,
+    recent_passwords: [password_hash],
+    password_hash,
+    password_salt: salt,
+    salt,
+    two_factor_enabled: false,
+    two_factor_secret: null,
+    oauth_provider: null,
+    oauth_id: null
+  };
+
+  const newProfile: any = {
+    user_id: userId,
+    communication_style: 'warm',
+    overdo_patterns: [],
+    preferred_tone: 'kind but direct',
+    preserve_voice: true,
+    favorite_phrases: [],
+    avoided_phrases: [],
+    default_scenario: 'general',
+    notes: '',
+    timezone: 'UTC',
+    locale: 'en-US',
+    email_notifications_enabled: true,
+    security_alerts_enabled: true,
+    monthly_reports_enabled: false,
+    ui_density: 'comfortable'
+  };
+
+  currentDb.users.push(newUser);
+  currentDb.user_profiles.push(newProfile);
+
+  // Verification Code
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+  currentDb.email_verification_tokens.push({
+    id: 'evt_' + crypto.randomBytes(8).toString('hex'),
+    user_id: userId,
+    code: verificationCode,
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString()
+  });
+
+  saveDB();
+
+  sendEmailVerificationCode(cleanEmail, cleanName, verificationCode);
+  logSecurityEvent(userId, req.ip, 'auth.signup', `New user registered: ${cleanEmail}`);
+
+  const token = createSession(userId);
+  setSecureCookie(res, req, 'session_id', token, 24 * 60 * 60);
+  res.setHeader('X-New-Session-ID', token);
+
+  return res.status(201).json({
+    success: true,
+    token,
+    sessionId: token,
+    user: sanitizeUser(newUser),
+    profile: newProfile,
+    verification_code: verificationCode
+  });
+});
+
+/**
+ * POST /api/auth/logout
+ * Terminates active session and invalidates secure cookie
+ */
+app.post('/api/auth/logout', (req: any, res) => {
+  const cookies = parseCookies(req.headers.cookie);
+  const token = req.sessionId || cookies['session_id'];
+  if (token) {
+    const currentDb = loadDB() as any;
+    if (currentDb.sessions) {
+      currentDb.sessions = currentDb.sessions.filter((s: any) => s.id !== token);
+      saveDB();
+    }
+  }
+  clearSecureCookie(res, req, 'session_id');
+  if (req.user) {
+    logSecurityEvent(req.user.id, req.ip, 'auth.logout', `User logged out: ${req.user.email}`);
+  }
+  res.json({ success: true, message: 'Logged out successfully.' });
+});
+
+/**
+ * POST /api/auth/2fa/login-verify
+ * Validates TOTP code against pre-auth challenge token
+ */
+app.post('/api/auth/2fa/login-verify', (req: any, res) => {
+  const { pre_auth_token, code } = req.body;
+  if (!pre_auth_token || !code) {
+    return res.status(400).json({ error: 'pre_auth_token and 6-digit code are required.' });
+  }
+
+  const pending = pending2faTokens.get(pre_auth_token);
+  if (!pending || pending.expiresAt < Date.now()) {
+    return res.status(401).json({ error: '2FA challenge expired. Please enter your credentials again.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const user = (currentDb.users || []).find((u: any) => u.id === pending.userId);
+  if (!user || !user.two_factor_secret) {
+    return res.status(400).json({ error: 'Two-factor authentication not found for user.' });
+  }
+
+  const isValid = verifyTOTP(user.two_factor_secret, code);
+  if (!isValid) {
+    logSecurityEvent(user.id, req.ip, 'auth.mfa_failed', `Failed 2FA code verification for user: ${user.email}`);
+    return res.status(401).json({ error: 'Invalid verification code.' });
+  }
+
+  pending2faTokens.delete(pre_auth_token);
+  user.failed_login_attempts = 0;
+  user.locked_until = null;
+  user.last_login = new Date().toISOString();
+  saveDB();
+
+  const token = createSession(user.id);
+  setSecureCookie(res, req, 'session_id', token, 24 * 60 * 60);
+  res.setHeader('X-New-Session-ID', token);
+
+  const profile = (currentDb.user_profiles || []).find((p: any) => p.user_id === user.id);
+  logSecurityEvent(user.id, req.ip, 'auth.login_mfa_success', `User logged in with 2FA: ${user.email}`);
+
+  res.json({
+    success: true,
+    token,
+    sessionId: token,
+    user: sanitizeUser(user),
+    profile
+  });
+});
+
+/**
+ * POST /api/auth/2fa/setup (requireAuth)
+ */
+app.post('/api/auth/2fa/setup', requireAuth, async (req: any, res) => {
+  try {
+    const secret = generateBase32Secret();
+    const { uri, qrCodeDataUrl } = await generateTOTPUriAndQR(req.user.email, secret);
+    res.json({ success: true, secret, qrCodeDataUrl, uri });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to generate MFA credentials.' });
+  }
+});
+
+/**
+ * POST /api/auth/2fa/verify (requireAuth)
+ */
+app.post('/api/auth/2fa/verify', requireAuth, (req: any, res) => {
+  const { secret, code } = req.body;
+  if (!secret || !code) {
+    return res.status(400).json({ error: 'Secret and verification code are required.' });
+  }
+
+  const isValid = verifyTOTP(secret, code);
+  if (!isValid) {
+    return res.status(400).json({ error: 'Invalid verification code. Please check your authenticator clock.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const user = (currentDb.users || []).find((u: any) => u.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  user.two_factor_secret = secret;
+  user.two_factor_enabled = true;
+  saveDB();
+  logSecurityEvent(user.id, req.ip, 'security.mfa_enabled', `Two-factor authentication enabled for user: ${user.email}`);
+
+  res.json({ success: true, message: 'Two-factor authentication verified and enabled.' });
+});
+
+/**
+ * POST /api/auth/2fa/disable (requireAuth)
+ */
+app.post('/api/auth/2fa/disable', requireAuth, (req: any, res) => {
+  const currentDb = loadDB() as any;
+  const user = (currentDb.users || []).find((u: any) => u.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  user.two_factor_enabled = false;
+  user.two_factor_secret = null;
+  saveDB();
+  logSecurityEvent(user.id, req.ip, 'security.mfa_disabled', `Two-factor authentication disabled for user: ${user.email}`);
+
+  res.json({ success: true, message: 'Two-factor authentication disabled.' });
+});
+
+/**
+ * POST /api/auth/verify-email
+ */
+app.post('/api/auth/verify-email', (req: any, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and verification code are required.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const cleanEmail = String(email).toLowerCase().trim();
+  const user = (currentDb.users || []).find((u: any) => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    return res.status(404).json({ error: 'Account not found.' });
+  }
+
+  const tokenIdx = (currentDb.email_verification_tokens || []).findIndex(
+    (t: any) => t.user_id === user.id && t.code === String(code).trim() && new Date(t.expires_at) > new Date()
+  );
+
+  if (tokenIdx === -1) {
+    return res.status(400).json({ error: 'Invalid or expired verification code.' });
+  }
+
+  user.email_verified = true;
+  currentDb.email_verification_tokens.splice(tokenIdx, 1);
+  saveDB();
+
+  logSecurityEvent(user.id, req.ip, 'auth.email_verified', `Email verified for user: ${user.email}`);
+
+  const token = createSession(user.id);
+  setSecureCookie(res, req, 'session_id', token, 24 * 60 * 60);
+  res.setHeader('X-New-Session-ID', token);
+  const profile = (currentDb.user_profiles || []).find((p: any) => p.user_id === user.id);
+
+  res.json({
+    success: true,
+    message: 'Email successfully verified.',
+    token,
+    sessionId: token,
+    user: sanitizeUser(user),
+    profile
+  });
+});
+
+/**
+ * POST /api/auth/resend-verification
+ */
+app.post('/api/auth/resend-verification', (req: any, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const cleanEmail = String(email).toLowerCase().trim();
+  const user = (currentDb.users || []).find((u: any) => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    return res.status(404).json({ error: 'Account not found.' });
+  }
+
+  if (user.email_verified) {
+    return res.status(400).json({ error: 'Email is already verified.' });
+  }
+
+  const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+  if (!currentDb.email_verification_tokens) currentDb.email_verification_tokens = [];
+  currentDb.email_verification_tokens = currentDb.email_verification_tokens.filter(
+    (t: any) => t.user_id !== user.id
+  );
+  currentDb.email_verification_tokens.push({
+    id: 'evt_' + crypto.randomBytes(8).toString('hex'),
+    user_id: user.id,
+    code: newCode,
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString()
+  });
+  saveDB();
+
+  sendEmailVerificationCode(cleanEmail, user.name || 'there', newCode);
+  logSecurityEvent(user.id, req.ip, 'auth.resend_code', `Verification code resent to: ${cleanEmail}`);
+
+  res.json({
+    success: true,
+    message: 'A fresh verification code has been dispatched.',
+    code: newCode
+  });
+});
+
+/**
+ * POST /api/auth/forgot-password
+ */
+app.post('/api/auth/forgot-password', (req: any, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const cleanEmail = String(email).toLowerCase().trim();
+  const user = (currentDb.users || []).find((u: any) => u.email.toLowerCase() === cleanEmail);
+
+  if (user) {
+    const token = crypto.randomBytes(24).toString('hex');
+    if (!currentDb.password_reset_tokens) currentDb.password_reset_tokens = [];
+    currentDb.password_reset_tokens = currentDb.password_reset_tokens.filter(
+      (t: any) => t.user_id !== user.id
+    );
+    currentDb.password_reset_tokens.push({
+      id: 'prt_' + crypto.randomBytes(8).toString('hex'),
+      user_id: user.id,
+      token_hash: token,
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      created_at: new Date().toISOString()
+    });
+    saveDB();
+    sendEmailPasswordReset(cleanEmail, token, user.name || 'Valued User');
+    logSecurityEvent(user.id, req.ip, 'auth.password_reset_requested', `Password reset token requested: ${cleanEmail}`);
+    return res.json({
+      success: true,
+      message: 'Password recovery instructions have been dispatched.',
+      token
+    });
+  }
+
+  // Consistent generic response to prevent user enumeration
+  res.json({
+    success: true,
+    message: 'If an account matches that email, password recovery instructions have been dispatched.'
+  });
+});
+
+/**
+ * POST /api/auth/reset-password
+ */
+app.post('/api/auth/reset-password', (req: any, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: 'Reset token and new password are required.' });
+  }
+
+  const strengthCheck = validatePasswordStrength(newPassword);
+  if (!strengthCheck.isValid) {
+    return res.status(400).json({ error: strengthCheck.error });
+  }
+
+  const currentDb = loadDB() as any;
+  const tokenIdx = (currentDb.password_reset_tokens || []).findIndex(
+    (t: any) => t.token_hash === String(token).trim() && new Date(t.expires_at) > new Date()
+  );
+
+  if (tokenIdx === -1) {
+    return res.status(400).json({ error: 'Invalid or expired password reset token.' });
+  }
+
+  const tokenRecord = currentDb.password_reset_tokens[tokenIdx];
+  const user = (currentDb.users || []).find((u: any) => u.id === tokenRecord.user_id);
+  if (!user) {
+    return res.status(404).json({ error: 'User account associated with token not found.' });
+  }
+
+  const salt = generateSalt();
+  const hash = hashPassword(newPassword, salt);
+  user.password_hash = hash;
+  user.password_salt = salt;
+  user.salt = salt;
+  user.recent_passwords = [...(user.recent_passwords || []), hash].slice(-5);
+  user.failed_login_attempts = 0;
+  user.locked_until = null;
+
+  // Invalidate token
+  currentDb.password_reset_tokens.splice(tokenIdx, 1);
+  saveDB();
+
+  logSecurityEvent(user.id, req.ip, 'auth.password_reset_success', `Password successfully reset for user: ${user.email}`);
+
+  res.json({
+    success: true,
+    message: 'Your password has been successfully reset. Please sign in with your new credentials.'
+  });
+});
+
+/**
+ * POST /api/auth/change-password (requireAuth)
+ */
+app.post('/api/auth/change-password', requireAuth, (req: any, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required.' });
+  }
+
+  const currentDb = loadDB() as any;
+  const user = (currentDb.users || []).find((u: any) => u.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  const userSalt = user.password_salt || user.salt;
+  if (user.password_hash && userSalt) {
+    const candidateHash = hashPassword(currentPassword, userSalt);
+    if (candidateHash !== user.password_hash) {
+      return res.status(400).json({ error: 'Current password does not match.' });
+    }
+  }
+
+  const strengthCheck = validatePasswordStrength(newPassword);
+  if (!strengthCheck.isValid) {
+    return res.status(400).json({ error: strengthCheck.error });
+  }
+
+  const salt = generateSalt();
+  const hash = hashPassword(newPassword, salt);
+  user.password_hash = hash;
+  user.password_salt = salt;
+  user.salt = salt;
+  user.recent_passwords = [...(user.recent_passwords || []), hash].slice(-5);
+  saveDB();
+
+  logSecurityEvent(user.id, req.ip, 'auth.password_changed', `Password changed by user: ${user.email}`);
+
+  res.json({ success: true, message: 'Password changed successfully.' });
+});
+
+/**
+ * POST /api/auth/logout-all-devices (requireAuth)
+ */
+app.post('/api/auth/logout-all-devices', requireAuth, (req: any, res) => {
+  const currentDb = loadDB() as any;
+  if (currentDb.sessions) {
+    currentDb.sessions = currentDb.sessions.filter((s: any) => s.user_id !== req.user.id);
+    saveDB();
+  }
+  clearSecureCookie(res, req, 'session_id');
+  logSecurityEvent(req.user.id, req.ip, 'auth.logout_all', `Terminated all sessions for user: ${req.user.email}`);
+  res.json({ success: true, message: 'All active sessions terminated across all devices.' });
+});
+
+/**
+ * POST /api/auth/oauth-callback
+ */
+app.post('/api/auth/oauth-callback', (req: any, res) => {
+  const { provider, email, name, id } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'OAuth email is required.' });
+  }
+
+  const currentDb = loadDB() as any;
+  if (!currentDb.users) currentDb.users = [];
+  if (!currentDb.user_profiles) currentDb.user_profiles = [];
+
+  const cleanEmail = String(email).toLowerCase().trim();
+  let user = currentDb.users.find(
+    (u: any) => u.email.toLowerCase() === cleanEmail || (u.oauth_provider === provider && u.oauth_id === id)
+  );
+
+  if (!user) {
+    const userId = 'u_' + crypto.randomBytes(8).toString('hex');
+    user = {
+      id: userId,
+      name: name || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      plan: 'free',
+      role: 'user',
+      created_at: new Date().toISOString(),
+      onboarding_completed: false,
+      usage_count_month: 0,
+      billing_customer_id: null,
+      billing_status: null,
+      email_verified: true,
+      status: 'active',
+      failed_login_attempts: 0,
+      locked_until: null,
+      recent_passwords: [],
+      oauth_provider: provider || 'oauth',
+      oauth_id: id || userId,
+      two_factor_enabled: false
+    };
+    currentDb.users.push(user);
+
+    const profile: any = {
+      user_id: userId,
+      communication_style: 'warm',
+      overdo_patterns: [],
+      preferred_tone: 'kind but direct',
+      preserve_voice: true,
+      favorite_phrases: [],
+      avoided_phrases: [],
+      default_scenario: 'general',
+      notes: '',
+      timezone: 'UTC',
+      locale: 'en-US',
+      email_notifications_enabled: true,
+      security_alerts_enabled: true,
+      monthly_reports_enabled: false,
+      ui_density: 'comfortable'
+    };
+    currentDb.user_profiles.push(profile);
+  } else {
+    user.oauth_provider = provider || user.oauth_provider;
+    user.oauth_id = id || user.oauth_id;
+    user.email_verified = true;
+    user.last_login = new Date().toISOString();
+  }
+
+  saveDB();
+
+  const token = createSession(user.id);
+  setSecureCookie(res, req, 'session_id', token, 30 * 24 * 60 * 60);
+  res.setHeader('X-New-Session-ID', token);
+
+  const profile = currentDb.user_profiles.find((p: any) => p.user_id === user.id);
+  logSecurityEvent(user.id, req.ip, 'auth.oauth_login', `OAuth login via ${provider}: ${user.email}`);
+
+  res.json({
+    success: true,
+    token,
+    sessionId: token,
+    user: sanitizeUser(user),
+    profile
+  });
+});
+
+/**
+ * POST /api/auth/oauth-link (requireAuth)
+ */
+app.post('/api/auth/oauth-link', requireAuth, (req: any, res) => {
+  const { provider, id } = req.body;
+  const currentDb = loadDB() as any;
+  const user = (currentDb.users || []).find((u: any) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+
+  user.oauth_provider = provider;
+  user.oauth_id = id;
+  saveDB();
+  logSecurityEvent(user.id, req.ip, 'security.oauth_linked', `Linked ${provider} account to: ${user.email}`);
+
+  res.json({ success: true, user: sanitizeUser(user) });
+});
+
+/**
+ * POST /api/auth/oauth-unlink (requireAuth)
+ */
+app.post('/api/auth/oauth-unlink', requireAuth, (req: any, res) => {
+  const currentDb = loadDB() as any;
+  const user = (currentDb.users || []).find((u: any) => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+
+  user.oauth_provider = null;
+  user.oauth_id = null;
+  saveDB();
+  logSecurityEvent(user.id, req.ip, 'security.oauth_unlinked', `Unlinked OAuth from: ${user.email}`);
+
+  res.json({ success: true, user: sanitizeUser(user) });
+});
+
+/**
  * Identity Admin Routing: List registered users with sanitized profiles
  */
 app.get('/api/admin/users', requireAdmin, (req: any, res) => {
@@ -617,38 +1367,25 @@ app.get('/api/security/metrics', requireAuth, (req: any, res) => {
  */
 app.get('/api/state', (req: any, res) => {
   const currentDb = loadDB() as any;
-  let user = req.user;
+  const user = req.user;
 
-  // Auto-establish a secure cookie session for the platform user (kiaria2514@gmail.com) on initial load 
-  // to maintain an elite, zero-barrier out-of-the-box user experience
   if (!user) {
-    const defaultEmail = 'kiaria2514@gmail.com';
-    let defaultUser = currentDb.users.find((u: any) => u.email.toLowerCase() === defaultEmail);
-
-    if (!defaultUser) {
-      defaultUser = {
-        id: 'u1',
-        name: 'John Doe',
-        email: defaultEmail,
-        plan: 'pro',
-        role: 'admin',
-        created_at: new Date().toISOString(),
-        onboarding_completed: true,
-        usage_count_month: 4,
-        billing_customer_id: 'cus_H123456789',
-        billing_status: 'active'
-      };
-      currentDb.users.push(defaultUser);
-      saveDB();
-    }
-
-    const token = createSession(defaultUser.id);
-    setSecureCookie(res, req, 'session_id', token, 24 * 60 * 60);
-    user = defaultUser;
+    return res.json({
+      success: true,
+      token: null,
+      sessionId: null,
+      user: null,
+      profile: null,
+      analyses: [],
+      templates: currentDb.templates || [],
+      playbooks: currentDb.playbooks || [],
+      blog_posts: currentDb.blog_posts || [],
+      testimonials: currentDb.testimonials || []
+    });
   }
 
   // Retrieve authorized content profiles
-  let profile = currentDb.user_profiles.find((p: any) => p.user_id === user.id);
+  let profile = (currentDb.user_profiles || []).find((p: any) => p.user_id === user.id);
   if (!profile) {
     profile = {
       user_id: user.id,
@@ -667,15 +1404,13 @@ app.get('/api/state', (req: any, res) => {
       monthly_reports_enabled: false,
       ui_density: 'comfortable'
     };
+    currentDb.user_profiles = currentDb.user_profiles || [];
     currentDb.user_profiles.push(profile);
     saveDB();
   }
 
   // Strict Row-Level Security: Only load analyses belonging to the active session user
-  const userAnalyses = currentDb.analyses.filter((a: any) => a.user_id === user.id);
-
-  // Sanitize password credentials out of response context
-  const { password_hash, salt, ...sanitizedUser } = user;
+  const userAnalyses = (currentDb.analyses || []).filter((a: any) => a.user_id === user.id);
 
   const sessionToken = req.sessionId || createSession(user.id);
   setSecureCookie(res, req, 'session_id', sessionToken, 24 * 60 * 60);
@@ -684,13 +1419,13 @@ app.get('/api/state', (req: any, res) => {
     success: true,
     token: sessionToken,
     sessionId: sessionToken,
-    user: sanitizedUser,
+    user: sanitizeUser(user),
     profile,
     analyses: userAnalyses,
-    templates: currentDb.templates,
-    playbooks: currentDb.playbooks,
-    blog_posts: currentDb.blog_posts,
-    testimonials: currentDb.testimonials
+    templates: currentDb.templates || [],
+    playbooks: currentDb.playbooks || [],
+    blog_posts: currentDb.blog_posts || [],
+    testimonials: currentDb.testimonials || []
   });
 });
 

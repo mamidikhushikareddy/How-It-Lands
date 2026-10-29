@@ -137,6 +137,10 @@ export default function App() {
         setUser(data.user);
         setProfile(data.profile);
         saveAuthSession(data.token || data.sessionId, data.user, data.profile);
+      } else {
+        setUser(null);
+        setProfile(null);
+        clearAuthSession();
       }
       setAnalyses(data.analyses || []);
       setTemplates(data.templates || []);
@@ -574,7 +578,20 @@ export default function App() {
     }
 
     if (route === '/onboarding') {
-      if (!user) return <div className="text-center py-20 text-xs text-[#B5B8BE]">Loading account details...</div>;
+      if (loading) return <div className="text-center py-20 text-xs text-[#B5B8BE]">Loading account details...</div>;
+      if (!user) {
+        return (
+          <LoginPage 
+            onSuccess={(u, p) => {
+              saveAuthSession(undefined, u, p);
+              setUser(u);
+              setProfile(p);
+              setRoute('/onboarding');
+            }}
+            onNavigate={setRoute}
+          />
+        );
+      }
       return <Onboarding user={user} onComplete={handleOnboardingComplete} />;
     }
 
@@ -590,7 +607,31 @@ export default function App() {
 
     // App Logged-in shell
     if (route.startsWith('/app')) {
-      if (!user || !profile) return <div className="text-center py-20 text-xs text-slate-500 dark:text-slate-400">Retrieving security credentials...</div>;
+      if (loading) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B0E14] text-slate-500 dark:text-slate-400 text-xs font-mono">
+            Retrieving security credentials...
+          </div>
+        );
+      }
+
+      if (!user || !profile) {
+        return (
+          <LoginPage 
+            onSuccess={(u, p) => {
+              saveAuthSession(undefined, u, p);
+              setUser(u);
+              setProfile(p);
+              if (u.onboarding_completed) {
+                setRoute(route);
+              } else {
+                setRoute('/onboarding');
+              }
+            }}
+            onNavigate={setRoute}
+          />
+        );
+      }
 
       return (
         <div className="min-h-screen bg-slate-50 dark:bg-[#0B0E14] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans">
