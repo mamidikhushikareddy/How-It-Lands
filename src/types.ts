@@ -31,6 +31,7 @@ export interface User {
   email: string;
   plan: 'free' | 'plus' | 'pro' | 'teams' | 'enterprise';
   role: 'user' | 'admin' | 'super_admin' | 'moderator' | 'editor' | 'guest';
+  is_super_admin?: boolean;
   created_at: string;
   onboarding_completed: boolean;
   usage_count_month: number;

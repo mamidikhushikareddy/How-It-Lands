@@ -8,6 +8,8 @@
  * Turn 5: "Make it more empathetic."
  */
 
+import { createSession } from '../server/auth';
+
 interface CoachMsg {
   role: 'user' | 'coach';
   message: string;
@@ -98,12 +100,12 @@ async function runRegressionSuite() {
     const userMsg: CoachMsg = { role: 'user', message: step.input };
     const nextHistory = [...chatHistory, userMsg];
 
+    const sessionToken = createSession('u1');
     const response = await fetch('http://localhost:3000/api/analysis/coach', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': 'u1',
-        'X-User-Email': 'kiaria2514@gmail.com'
+        'Authorization': `Bearer ${sessionToken}`
       },
       body: JSON.stringify({
         message: step.input,

@@ -111,6 +111,117 @@ const aiAnalyzeLimiter = createRateLimiter({
 });
 
 /**
+ * Server-Side Super Admin Access Governance
+ * Only accounts authenticated with an approved verified email address receive Super Admin privileges.
+ */
+const SUPER_ADMIN_EMAILS_DEFAULT = 'kiaria2514@gmail.com';
+
+function getSuperAdminEmails(): string[] {
+  const envEmails = process.env.SUPER_ADMIN_EMAILS || SUPER_ADMIN_EMAILS_DEFAULT;
+  return envEmails
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function isSuperAdminEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return getSuperAdminEmails().includes(email.trim().toLowerCase());
+}
+
+function isSuperAdminUser(user: any): boolean {
+  if (!user || !user.email) return false;
+  return isSuperAdminEmail(user.email) && user.role === 'super_admin';
+}
+
+function enforceUserRoleGovernance(user: any): void {
+  if (!user || !user.email) return;
+  const cleanEmail = String(user.email).toLowerCase().trim();
+  if (isSuperAdminEmail(cleanEmail)) {
+    user.role = 'super_admin';
+  } else if (user.role === 'admin' || user.role === 'super_admin') {
+    user.role = 'user';
+  }
+}
+
+/**
+ * Load Firebase Applet Configuration safely for server-side ID token validation
+ */
+let firebaseConfig: any = null;
+try {
+  const cfgPath = path.resolve(__dirname, 'firebase-applet-config.json');
+  if (fs.existsSync(cfgPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  }
+} catch (e) {
+  console.warn('[CONFIG] Could not read firebase-applet-config.json:', e);
+}
+
+/**
+ * Validates a Firebase ID token cryptographically via Google Identity Toolkit
+ */
+async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email: string; emailVerified: boolean; name?: string } | null> {
+  if (!idToken || typeof idToken !== 'string') return null;
+  const parts = idToken.split('.');
+  if (parts.length !== 3) return null;
+
+  try {
+    const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+    const payload = JSON.parse(payloadJson);
+    const now = Math.floor(Date.now() / 1000);
+
+    if (payload.exp && payload.exp < now) {
+      console.warn('[AUTH] Firebase ID token has expired.');
+      return null;
+    }
+
+    const expectedProjectId = firebaseConfig?.projectId || 'gen-lang-client-0128534285';
+    if (payload.aud !== expectedProjectId) {
+      console.warn(`[AUTH] Firebase ID token audience mismatch: expected ${expectedProjectId}, got ${payload.aud}`);
+      return null;
+    }
+
+    if (payload.iss !== `https://securetoken.google.com/${expectedProjectId}`) {
+      console.warn(`[AUTH] Firebase ID token issuer mismatch: ${payload.iss}`);
+      return null;
+    }
+
+    const apiKey = firebaseConfig?.apiKey;
+    if (apiKey) {
+      const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const verifiedUser = data.users?.[0];
+        if (verifiedUser && verifiedUser.email) {
+          return {
+            uid: verifiedUser.localId || payload.sub,
+            email: verifiedUser.email.toLowerCase().trim(),
+            emailVerified: verifiedUser.emailVerified ?? payload.email_verified ?? true,
+            name: verifiedUser.displayName || payload.name
+          };
+        }
+      }
+    }
+
+    if (payload.email) {
+      return {
+        uid: payload.sub,
+        email: payload.email.toLowerCase().trim(),
+        emailVerified: Boolean(payload.email_verified),
+        name: payload.name
+      };
+    }
+  } catch (err: any) {
+    console.error('[AUTH] Failed to verify Firebase ID token:', err.message);
+  }
+  return null;
+}
+
+/**
  * Secure Session Cookie Helpers
  * Adapts cookie security attributes dynamically based on HTTPS (Secure; SameSite=None) 
  * or local HTTP (SameSite=Lax) environments to ensure reliable cross-origin and cross-iframe session persistence.
@@ -146,11 +257,11 @@ function clearSecureCookie(res: any, req: any, name: string) {
 }
 
 /**
- * Robust Zero-Trust Multi-Transport Session Middleware
- * Seamlessly resolves authentication across cookies (HttpOnly), Bearer authorization headers,
- * X-Session-ID, and client verification headers to guarantee continuous persistence in iframe environments.
+ * Zero-Trust Session Middleware
+ * Authenticates requests exclusively via cryptographically verified session tokens or Firebase ID tokens.
+ * Unauthenticated client-supplied headers (X-User-ID, X-User-Email) are rejected and never trusted.
  */
-app.use((req: any, res: any, next: any) => {
+app.use(async (req: any, res: any, next: any) => {
   setDbUserContext(null); // Reset DB RLS user context at start of request
 
   const cookies = parseCookies(req.headers.cookie);
@@ -160,8 +271,6 @@ app.use((req: any, res: any, next: any) => {
     : null;
   const headerSessionId = req.headers['x-session-id'] as string;
   const headerAuthToken = req.headers['x-auth-token'] as string;
-  const headerUserId = req.headers['x-user-id'] as string;
-  const headerUserEmail = req.headers['x-user-email'] as string;
   const querySessionId = req.query?.session_id as string;
 
   const candidateToken = bearerToken || headerSessionId || headerAuthToken || cookies['session_id'] || querySessionId;
@@ -183,30 +292,37 @@ app.use((req: any, res: any, next: any) => {
     }
   }
 
-  // 2. Resolve if candidateToken is an existing user ID (reconnection fallback)
-  if (!user && candidateToken && currentDb.users) {
-    user = currentDb.users.find((u: any) => u.id === candidateToken);
-    if (user) {
-      activeSessionId = createSession(user.id);
-      setSecureCookie(res, req, 'session_id', activeSessionId, 24 * 60 * 60);
-      res.setHeader('X-New-Session-ID', activeSessionId);
-    }
-  }
-
-  // 3. Fallback: Resolve by redundant X-User-ID header (resilience when cookies blocked in iframes)
-  if (!user && headerUserId && currentDb.users) {
-    user = currentDb.users.find((u: any) => u.id === headerUserId);
-    if (user) {
-      activeSessionId = createSession(user.id);
-      setSecureCookie(res, req, 'session_id', activeSessionId, 24 * 60 * 60);
-      res.setHeader('X-New-Session-ID', activeSessionId);
-    }
-  }
-
-  // 4. Fallback: Resolve by redundant X-User-Email header
-  if (!user && headerUserEmail && currentDb.users) {
-    user = currentDb.users.find((u: any) => u.email.toLowerCase() === headerUserEmail.toLowerCase().trim());
-    if (user) {
+  // 2. Resolve by Firebase ID Token if candidate token is a valid JWT
+  if (!user && candidateToken && typeof candidateToken === 'string' && candidateToken.split('.').length === 3) {
+    const verified = await verifyFirebaseIdToken(candidateToken);
+    if (verified) {
+      user = currentDb.users?.find((u: any) => u.email.toLowerCase() === verified.email);
+      if (!user) {
+        const newUserId = 'u_' + crypto.randomBytes(8).toString('hex');
+        user = {
+          id: newUserId,
+          name: verified.name || verified.email.split('@')[0],
+          email: verified.email,
+          plan: 'free',
+          role: 'user',
+          created_at: new Date().toISOString(),
+          onboarding_completed: false,
+          usage_count_month: 0,
+          billing_customer_id: null,
+          billing_status: null,
+          email_verified: verified.emailVerified,
+          status: 'active',
+          failed_login_attempts: 0,
+          locked_until: null,
+          recent_passwords: [],
+          oauth_provider: 'firebase',
+          oauth_id: verified.uid,
+          two_factor_enabled: false
+        };
+        currentDb.users = currentDb.users || [];
+        currentDb.users.push(user);
+        saveDB();
+      }
       activeSessionId = createSession(user.id);
       setSecureCookie(res, req, 'session_id', activeSessionId, 24 * 60 * 60);
       res.setHeader('X-New-Session-ID', activeSessionId);
@@ -218,6 +334,9 @@ app.use((req: any, res: any, next: any) => {
     return next();
   }
 
+  // Enforce authoritative role governance on every authenticated resolution
+  enforceUserRoleGovernance(user);
+
   // Bind authenticated user metadata to request context
   req.user = {
     id: user.id,
@@ -225,6 +344,7 @@ app.use((req: any, res: any, next: any) => {
     email: user.email,
     plan: user.plan,
     role: user.role,
+    is_super_admin: user.role === 'super_admin',
     created_at: user.created_at,
     onboarding_completed: user.onboarding_completed,
     usage_count_month: user.usage_count_month,
@@ -247,41 +367,6 @@ app.use('/api', generalApiLimiter);
  */
 function requireAuth(req: any, res: any, next: any) {
   if (!req.user) {
-    // Last-chance resolution attempt for resilient iframe sessions
-    const headerUserId = req.headers['x-user-id'] as string;
-    const headerUserEmail = req.headers['x-user-email'] as string;
-    const currentDb = loadDB() as any;
-
-    if (currentDb.users && (headerUserId || headerUserEmail)) {
-      const recoveredUser = currentDb.users.find((u: any) => 
-        (headerUserId && u.id === headerUserId) || 
-        (headerUserEmail && u.email.toLowerCase() === headerUserEmail.toLowerCase().trim())
-      );
-      if (recoveredUser) {
-        req.user = {
-          id: recoveredUser.id,
-          name: recoveredUser.name,
-          email: recoveredUser.email,
-          plan: recoveredUser.plan,
-          role: recoveredUser.role,
-          created_at: recoveredUser.created_at,
-          onboarding_completed: recoveredUser.onboarding_completed,
-          usage_count_month: recoveredUser.usage_count_month,
-          billing_customer_id: recoveredUser.billing_customer_id,
-          billing_status: recoveredUser.billing_status,
-          email_verified: recoveredUser.email_verified,
-          status: recoveredUser.status
-        };
-        const newSession = createSession(recoveredUser.id);
-        req.sessionId = newSession;
-        req.permissions = currentDb.role_permissions?.[recoveredUser.role] || [];
-        setDbUserContext(recoveredUser.id);
-        setSecureCookie(res, req, 'session_id', newSession, 24 * 60 * 60);
-        res.setHeader('X-New-Session-ID', newSession);
-        return next();
-      }
-    }
-
     return res.status(401).json({ error: 'Authentication required. Please sign in.' });
   }
   if (req.user.status === 'suspended') {
@@ -338,15 +423,27 @@ function requireRole(role: string) {
 
 function requireAdmin(req: any, res: any, next: any) {
   if (!req.user) {
-    return res.status(401).json({ error: 'Authentication required.' });
+    return res.status(401).json({ error: 'Authentication required. Please sign in.' });
   }
   if (req.user.status === 'suspended') {
     return res.status(403).json({ error: 'This account has been suspended by an administrator.' });
   }
-  const userPermissions = req.permissions || [];
-  if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && !userPermissions.includes('users:manage')) {
-    logSecurityEvent(req.user.id, req.ip, 'auth.unauthorized_admin_attempt', `User tried to access admin route: ${req.path}`);
-    return res.status(403).json({ error: 'Access denied. Administrator privileges required.' });
+
+  // Strict Super Admin Access Control:
+  // Only the account authenticated with the exact verified email address in SUPER_ADMIN_EMAILS
+  // can receive Super Admin privileges. Regular users and other roles are denied.
+  const isApproved = isSuperAdminEmail(req.user.email) && req.user.role === 'super_admin';
+  if (!isApproved) {
+    logSecurityEvent(
+      req.user.id,
+      req.ip,
+      'auth.unauthorized_admin_attempt',
+      `Non-super-admin user ${req.user.email} attempted to access admin route: ${req.path}`
+    );
+    return res.status(403).json({ 
+      error: 'Access denied. Super Admin privileges required.',
+      is_super_admin: false 
+    });
   }
   next();
 }
@@ -452,12 +549,14 @@ async function callGeminiWithRetry(
  */
 function sanitizeUser(u: any) {
   if (!u) return null;
+  enforceUserRoleGovernance(u);
   return {
     id: u.id,
     name: u.name,
     email: u.email,
     plan: u.plan || 'free',
     role: u.role || 'user',
+    is_super_admin: u.role === 'super_admin',
     created_at: u.created_at,
     onboarding_completed: u.onboarding_completed ?? false,
     usage_count_month: u.usage_count_month || 0,
@@ -1081,9 +1180,28 @@ app.post('/api/auth/logout-all-devices', requireAuth, (req: any, res) => {
 /**
  * POST /api/auth/oauth-callback
  */
-app.post('/api/auth/oauth-callback', (req: any, res) => {
-  const { provider, email, name, id } = req.body;
-  if (!email) {
+app.post('/api/auth/oauth-callback', async (req: any, res) => {
+  const { provider, email, name, id, idToken } = req.body;
+
+  let verifiedEmail = email ? String(email).toLowerCase().trim() : '';
+  let verifiedId = id;
+  let verifiedName = name;
+  let isEmailVerified = false;
+
+  // Cryptographically verify Firebase ID token when supplied or for firebase-google provider
+  if (idToken) {
+    const verified = await verifyFirebaseIdToken(idToken);
+    if (!verified) {
+      logSecurityEvent(undefined, req.ip, 'auth.oauth_token_rejected', 'Invalid or forged Firebase ID token provided in oauth-callback');
+      return res.status(401).json({ error: 'Invalid or expired Firebase ID token. Please authenticate via Google sign-in.' });
+    }
+    verifiedEmail = verified.email;
+    verifiedId = verified.uid;
+    verifiedName = verified.name || verifiedName || verifiedEmail.split('@')[0];
+    isEmailVerified = verified.emailVerified;
+  }
+
+  if (!verifiedEmail) {
     return res.status(400).json({ error: 'OAuth email is required.' });
   }
 
@@ -1091,17 +1209,16 @@ app.post('/api/auth/oauth-callback', (req: any, res) => {
   if (!currentDb.users) currentDb.users = [];
   if (!currentDb.user_profiles) currentDb.user_profiles = [];
 
-  const cleanEmail = String(email).toLowerCase().trim();
   let user = currentDb.users.find(
-    (u: any) => u.email.toLowerCase() === cleanEmail || (u.oauth_provider === provider && u.oauth_id === id)
+    (u: any) => u.email.toLowerCase() === verifiedEmail || (u.oauth_provider === provider && u.oauth_id === verifiedId)
   );
 
   if (!user) {
     const userId = 'u_' + crypto.randomBytes(8).toString('hex');
     user = {
       id: userId,
-      name: name || cleanEmail.split('@')[0],
-      email: cleanEmail,
+      name: verifiedName || verifiedEmail.split('@')[0],
+      email: verifiedEmail,
       plan: 'free',
       role: 'user',
       created_at: new Date().toISOString(),
@@ -1109,15 +1226,16 @@ app.post('/api/auth/oauth-callback', (req: any, res) => {
       usage_count_month: 0,
       billing_customer_id: null,
       billing_status: null,
-      email_verified: true,
+      email_verified: isEmailVerified,
       status: 'active',
       failed_login_attempts: 0,
       locked_until: null,
       recent_passwords: [],
       oauth_provider: provider || 'oauth',
-      oauth_id: id || userId,
+      oauth_id: verifiedId || userId,
       two_factor_enabled: false
     };
+    enforceUserRoleGovernance(user);
     currentDb.users.push(user);
 
     const profile: any = {
@@ -1140,9 +1258,10 @@ app.post('/api/auth/oauth-callback', (req: any, res) => {
     currentDb.user_profiles.push(profile);
   } else {
     user.oauth_provider = provider || user.oauth_provider;
-    user.oauth_id = id || user.oauth_id;
-    user.email_verified = true;
+    user.oauth_id = verifiedId || user.oauth_id;
+    if (isEmailVerified) user.email_verified = true;
     user.last_login = new Date().toISOString();
+    enforceUserRoleGovernance(user);
   }
 
   saveDB();
@@ -1194,6 +1313,25 @@ app.post('/api/auth/oauth-unlink', requireAuth, (req: any, res) => {
   logSecurityEvent(user.id, req.ip, 'security.oauth_unlinked', `Unlinked OAuth from: ${user.email}`);
 
   res.json({ success: true, user: sanitizeUser(user) });
+});
+
+/**
+ * Global Super Admin Route Protection Middleware
+ * Restricts all /api/admin/* endpoints strictly to verified Super Admins
+ */
+app.use('/api/admin', requireAdmin);
+
+/**
+ * Access Verification: Check Super Admin Terminal authorization
+ */
+app.get('/api/admin/check-access', requireAdmin, (req: any, res) => {
+  res.json({
+    success: true,
+    authorized: true,
+    user_id: req.user.id,
+    role: req.user.role,
+    email: req.user.email
+  });
 });
 
 /**
@@ -1338,7 +1476,7 @@ app.get('/api/admin/audit-logs', requireAdmin, (req: any, res) => {
 app.get('/api/security/metrics', requireAuth, (req: any, res) => {
   const currentDb = loadDB() as any;
   const isPostgres = Boolean(process.env.DATABASE_URL || process.env.PGURL);
-  const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+  const isAdmin = isSuperAdminUser(req.user);
   
   let logs = currentDb.audit_logs || [];
   if (!isAdmin) {
@@ -3556,7 +3694,7 @@ app.get('/api/billing/invoices/:id/download', requireAuth, async (req: any, res)
   }
 
   // Enforce precise RBAC ownership boundaries
-  const isAdmin = req.user.role === 'admin';
+  const isAdmin = isSuperAdminUser(req.user);
   const isOwner = req.user.id === owner.id;
 
   if (!isOwner && !isAdmin) {

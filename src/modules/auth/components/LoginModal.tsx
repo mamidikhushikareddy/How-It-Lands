@@ -105,13 +105,15 @@ function LoginModalContent({
       
       const result = await signInWithPopup(auth, googleProvider);
       const fbUser = result.user;
+      const idToken = await fbUser.getIdToken();
       
       // Call backend callback to register/login session in Express
       const res = await authApi.oauthCallback({
         provider: 'firebase-google',
         email: fbUser.email || '',
         name: fbUser.displayName || '',
-        id: fbUser.uid
+        id: fbUser.uid,
+        idToken
       });
 
       if (res.error) {

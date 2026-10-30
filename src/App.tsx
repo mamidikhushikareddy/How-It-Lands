@@ -8,7 +8,7 @@ import {
   Sparkles, MessageSquare, History, Bookmark, BookOpen, 
   Settings, Award, LogOut, Shield, Menu, X, ArrowRight,
   TrendingUp, Play, Zap, CheckCircle2, Lock, FileText, User as UserIcon,
-  CreditCard, Search, Sun, Moon
+  CreditCard, Search, Sun, Moon, ShieldAlert
 } from 'lucide-react';
 import { User, UserProfile, Analysis, Template, Playbook, BlogPost, Testimonial } from './types';
 import Marketing from './modules/marketing/components/Marketing';
@@ -148,12 +148,14 @@ export default function App() {
       setBlogPosts(data.blog_posts || []);
       setTestimonials(data.testimonials || []);
 
-      if (data.user && (data.user.role === 'admin' || data.user.role === 'super_admin')) {
+      if (data.user && data.user.role === 'super_admin') {
         try {
           const uRes = await authFetch('/api/admin/users');
-          const uData = await uRes.json();
-          if (uData.success) {
-            setUsers(uData.users);
+          if (uRes.ok) {
+            const uData = await uRes.json();
+            if (uData.success) {
+              setUsers(uData.users);
+            }
           }
         } catch (ue) {
           console.error('Failed to pre-fetch admin users:', ue);
@@ -173,9 +175,15 @@ export default function App() {
     }
   };
 
+  const isSuperAdmin = !loading && Boolean(user && user.role === 'super_admin');
+
   const fetchAdminUsers = async () => {
     try {
       const res = await authFetch('/api/admin/users');
+      if (res.status === 401 || res.status === 403) {
+        setUsers([]);
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setUsers(data.users);
@@ -186,10 +194,17 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (route === '/app/admin' && user && (user.role === 'admin' || user.role === 'super_admin')) {
-      fetchAdminUsers();
+    if (route === '/app/admin') {
+      if (!loading && (!user || user.role !== 'super_admin')) {
+        setRoute('/app/dashboard');
+        notify('Access denied. Super Admin privileges required.', 'error');
+        return;
+      }
+      if (!loading && user && user.role === 'super_admin') {
+        fetchAdminUsers();
+      }
     }
-  }, [route, user]);
+  }, [route, user, loading]);
 
   // Handles onboarding completion
   const handleOnboardingComplete = async (profileData: Partial<UserProfile>) => {
@@ -707,13 +722,15 @@ export default function App() {
                   <span>Profile & Settings</span>
                 </button>
 
-                <button 
-                  onClick={() => { setRoute('/app/admin'); setSelectedAnalysis(null); }}
-                  className={`w-full py-2 px-3 rounded-lg text-left transition flex items-center gap-2.5 ${route === '/app/admin' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-semibold shadow-xs' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                  <Settings className="w-4 h-4 opacity-70" />
-                  <span>Admin Terminal</span>
-                </button>
+                {isSuperAdmin && (
+                  <button 
+                    onClick={() => { setRoute('/app/admin'); setSelectedAnalysis(null); }}
+                    className={`w-full py-2 px-3 rounded-lg text-left transition flex items-center gap-2.5 ${route === '/app/admin' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-semibold shadow-xs' : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                  >
+                    <Settings className="w-4 h-4 opacity-70" />
+                    <span>Admin Terminal</span>
+                  </button>
+                )}
               </div>
 
               {/* Accessibility Controls Widget */}
@@ -838,7 +855,9 @@ export default function App() {
               <button onClick={() => { setRoute('/app/templates'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 px-3 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium">Starters & Templates</button>
               <button onClick={() => { setRoute('/app/playbooks'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 px-3 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium">Playbooks</button>
               <button onClick={() => { setRoute('/app/profile'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 px-3 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium">Profile & Settings</button>
-              <button onClick={() => { setRoute('/app/admin'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 px-3 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium">Admin Panel</button>
+              {isSuperAdmin && (
+                <button onClick={() => { setRoute('/app/admin'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 px-3 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium">Admin Terminal</button>
+              )}
               
               {/* Mobile Accessibility Controls */}
               <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
@@ -1067,15 +1086,33 @@ export default function App() {
             )}
 
             {route === '/app/admin' && (
-              <AdminPanel 
-                users={users}
-                templates={templates}
-                playbooks={playbooks}
-                blog_posts={blogPosts}
-                testimonials={testimonials}
-                onAdminAction={handleAdminAction}
-                currentUser={user || undefined}
-              />
+              isSuperAdmin ? (
+                <AdminPanel 
+                  users={users}
+                  templates={templates}
+                  playbooks={playbooks}
+                  blog_posts={blogPosts}
+                  testimonials={testimonials}
+                  onAdminAction={handleAdminAction}
+                  currentUser={user || undefined}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white dark:bg-[#151B28] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-xl mx-auto my-12">
+                  <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
+                    <ShieldAlert className="w-7 h-7" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Access Denied</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mb-6 leading-relaxed">
+                    Super Admin privileges are strictly restricted to authorized server-side administrative accounts. Your current profile does not have authorization to view this terminal.
+                  </p>
+                  <button
+                    onClick={() => setRoute('/app/dashboard')}
+                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-950 text-xs font-semibold rounded-lg shadow-sm transition"
+                  >
+                    Return to Workspace
+                  </button>
+                </div>
+              )
             )}
           </main>
         </div>

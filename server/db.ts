@@ -368,22 +368,28 @@ function getInitialDB(): DatabaseSchema {
   };
 }
 
+let lastDbMtime = 0;
+
 /**
  * Loads the database schema.
  * Applies Zero-Trust RLS filtering locally based on current db user context
  */
 export function loadDB(): DatabaseSchema {
-  if (dbCache) {
-    return dbCache;
-  }
-
   try {
     if (fs.existsSync(DB_PATH)) {
-      const data = fs.readFileSync(DB_PATH, 'utf8');
-      dbCache = JSON.parse(data);
+      const stats = fs.statSync(DB_PATH);
+      if (!dbCache || stats.mtimeMs > lastDbMtime) {
+        const data = fs.readFileSync(DB_PATH, 'utf8');
+        dbCache = JSON.parse(data);
+        lastDbMtime = stats.mtimeMs;
+      }
     }
   } catch (error) {
     console.error('[DATABASE] Failed to read db.json, starting fresh:', error);
+  }
+
+  if (dbCache) {
+    return dbCache;
   }
 
   if (!dbCache) {
@@ -419,7 +425,15 @@ export function loadDB(): DatabaseSchema {
     dbCache.plans = getInitialDB().plans;
   }
 
-  // Ensure all seeded/existing users have security fields
+  // Enforce authoritative Super Admin governance:
+  // Only accounts whose verified email matches SUPER_ADMIN_EMAILS (default: kiaria2514@gmail.com)
+  // receive the super_admin role. Any other accounts with admin roles are demoted to regular users.
+  const approvedSuperAdmins = (process.env.SUPER_ADMIN_EMAILS || 'kiaria2514@gmail.com')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  // Ensure all seeded/existing users have security fields and correct role governance
   dbCache.users.forEach(user => {
     if (user.email_verified === undefined) user.email_verified = true;
     if (user.status === undefined) user.status = 'active';
@@ -428,6 +442,13 @@ export function loadDB(): DatabaseSchema {
     if (user.recent_passwords === undefined) user.recent_passwords = [];
     if (user.oauth_provider === undefined) user.oauth_provider = null;
     if (user.oauth_id === undefined) user.oauth_id = null;
+
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    if (approvedSuperAdmins.includes(cleanEmail)) {
+      user.role = 'super_admin';
+    } else if (user.role === 'admin' || user.role === 'super_admin') {
+      user.role = 'user';
+    }
   });
 
   saveDB();
@@ -439,7 +460,7 @@ export function loadDB(): DatabaseSchema {
  */
 function applyRLSFilters(rawDb: DatabaseSchema): DatabaseSchema {
   const contextUserId = currentUserId;
-  const isUserAdmin = contextUserId ? rawDb.users.find(u => u.id === contextUserId)?.role === 'admin' : false;
+  const isUserAdmin = contextUserId ? ['admin', 'super_admin'].includes(rawDb.users.find(u => u.id === contextUserId)?.role || '') : false;
 
   return {
     ...rawDb,

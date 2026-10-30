@@ -13,6 +13,8 @@
  * 10. Existing user & database records preservation check
  */
 
+import { createSession } from '../server/auth';
+
 const BASE_URL = 'http://localhost:3000';
 
 async function runAuthRegressionSuite() {
@@ -171,13 +173,13 @@ async function runAuthRegressionSuite() {
 
   // 10. Existing Users & Database Records Preservation Check
   console.log('\n--- Step 10: Existing Records Preservation Check ---');
+  const adminSessionToken = createSession('u1');
   const existingUserRes = await fetch(`${BASE_URL}/api/admin/users`, {
     headers: {
-      'X-User-Email': 'kiaria2514@gmail.com',
-      'X-User-Id': 'u1'
+      'Authorization': `Bearer ${adminSessionToken}`
     }
   });
-  assert(existingUserRes.status === 200, 'GET /api/admin/users accessible by admin u1');
+  assert(existingUserRes.status === 200, 'GET /api/admin/users accessible by authenticated super admin u1');
   const usersData = await existingUserRes.json();
   const originalUser = usersData.users?.find((u: any) => u.email === 'kiaria2514@gmail.com');
   assert(Boolean(originalUser), 'Existing account kiaria2514@gmail.com preserved in database');

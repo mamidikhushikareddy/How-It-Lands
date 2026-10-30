@@ -88,7 +88,7 @@ export const authApi = {
     return api.post<any>('/api/auth/logout-all-devices');
   },
 
-  async oauthCallback(payload: { provider: string; email: string; name: string; id: string }): Promise<AuthResponse> {
+  async oauthCallback(payload: { provider: string; email: string; name: string; id: string; idToken?: string }): Promise<AuthResponse> {
     return api.post<AuthResponse>('/api/auth/oauth-callback', payload);
   },
 
