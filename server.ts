@@ -5,9 +5,13 @@
 
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { loadDB, saveDB, setDbUserContext } from './server/db';
@@ -114,7 +118,7 @@ const aiAnalyzeLimiter = createRateLimiter({
  * Server-Side Super Admin Access Governance
  * Only accounts authenticated with an approved verified email address receive Super Admin privileges.
  */
-const SUPER_ADMIN_EMAILS_DEFAULT = 'kiaria2514@gmail.com';
+const SUPER_ADMIN_EMAILS_DEFAULT = '';
 
 function getSuperAdminEmails(): string[] {
   const envEmails = process.env.SUPER_ADMIN_EMAILS || SUPER_ADMIN_EMAILS_DEFAULT;
@@ -149,9 +153,16 @@ function enforceUserRoleGovernance(user: any): void {
  */
 let firebaseConfig: any = null;
 try {
-  const cfgPath = path.resolve(__dirname, 'firebase-applet-config.json');
-  if (fs.existsSync(cfgPath)) {
-    firebaseConfig = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  const candidatePaths = [
+    path.resolve(process.cwd(), 'firebase-applet-config.json'),
+    path.resolve(__dirname, 'firebase-applet-config.json'),
+    path.resolve(__dirname, '..', 'firebase-applet-config.json')
+  ];
+  for (const cfgPath of candidatePaths) {
+    if (fs.existsSync(cfgPath)) {
+      firebaseConfig = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      break;
+    }
   }
 } catch (e) {
   console.warn('[CONFIG] Could not read firebase-applet-config.json:', e);
