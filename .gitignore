@@ -1,23 +1,8 @@
-# Environment variables and credentials
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-*.pfx
-*service-account*.json
-*firebase-adminsdk*.json
-credentials.json
-secrets.json
-
-# Dependencies and build output
 node_modules/
+build/
 dist/
-.next/
-.venv/
 coverage/
+.DS_Store
 *.log
-
-# Local data
-db.json
+.env*
+!.env.example
