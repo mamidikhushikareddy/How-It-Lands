@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, MessageSquare, History, Bookmark, BookOpen, 
   Settings, Award, LogOut, Shield, Menu, X, ArrowRight,
@@ -25,8 +25,6 @@ import { LoginModal } from './modules/auth/components/LoginModal';
 import { LoginPage, SignupPage, LogoutPage } from './modules/auth/components/AuthPages';
 import { notify } from './components/ui/Toast';
 import { saveAuthSession, clearAuthSession, getStoredUser, getStoredProfile, authFetch } from './lib/authStorage';
-import { initAnalytics, identify, resetIdentity, track, getMessageLengthBracket } from './lib/analytics';
-import { ConsentBanner } from './components/ui/ConsentBanner';
 
 export default function App() {
   // Global Database & State (initialized from persistent storage for zero-flash auth)
@@ -89,42 +87,6 @@ export default function App() {
   useEffect(() => {
     fetchState();
   }, []);
-
-  // Analytics Initialization & User Identity Binding
-  useEffect(() => {
-    initAnalytics();
-    if (user?.id) {
-      identify(user.id);
-    }
-  }, [user?.id]);
-
-  // Route Change Tracking (feature_opened) with deduplication guard across re-renders
-  const prevRouteRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (prevRouteRef.current === route) return;
-    prevRouteRef.current = route;
-
-    const featureMap: Record<string, string> = {
-      '/': 'landing_marketing',
-      '/app/dashboard': 'workspace_dashboard',
-      '/app/analyze': 'message_analyst',
-      '/app/vault': 'saved_vault',
-      '/app/templates': 'starters_templates',
-      '/app/playbooks': 'strategy_playbooks',
-      '/app/profile': 'profile_settings',
-      '/app/admin': 'admin_terminal',
-      '/onboarding': 'onboarding_wizard',
-      '/login': 'login_page',
-      '/signup': 'signup_page'
-    };
-
-    if (featureMap[route]) {
-      track('feature_opened', {
-        feature_name: featureMap[route],
-        source: 'navigation'
-      });
-    }
-  }, [route]);
 
   // Firebase Auth sync effect
   useEffect(() => {
@@ -259,12 +221,6 @@ export default function App() {
         setUser(data.user);
         setProfile(data.profile);
 
-        track('onboarding_completed', {
-          total_steps: 5,
-          communication_style: data.profile?.communication_style || profileData.communication_style,
-          preferred_tone: data.profile?.preferred_tone || profileData.preferred_tone
-        });
-
         // Sync profile to Firestore
         try {
           const { auth } = await import('./lib/firebase');
@@ -288,7 +244,6 @@ export default function App() {
   // Handles premium plan upgrading override
   const handleUpgradePlan = async (plan: 'pro' | 'plus') => {
     if (!user) return;
-    track('checkout_started', { target_plan: plan, currency: 'USD' });
     try {
       setLoading(true);
       const res = await authFetch('/api/billing/upgrade', {
@@ -299,11 +254,6 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
-
-        track('subscription_activated', {
-          plan_id: plan,
-          status: 'active'
-        });
 
         // Sync upgraded user details to Firestore
         try {
@@ -340,14 +290,6 @@ export default function App() {
     target_language?: string;
   }) => {
     if (!user) return;
-    const startTime = Date.now();
-    const lengthBracket = getMessageLengthBracket(payload.original_message || '');
-    track('ai_request_started', {
-      request_type: 'analysis',
-      scenario: payload.scenario,
-      target_language: payload.target_language,
-      input_length_bracket: lengthBracket
-    });
     try {
       const res = await authFetch('/api/analyze', {
         method: 'POST',
@@ -356,11 +298,6 @@ export default function App() {
       });
       const data = await res.json();
       if (data.error) {
-        track('ai_request_failed', {
-          request_type: 'analysis',
-          error_type: data.gateType === 'usage_limit' ? 'quota_exceeded' : 'api_error',
-          latency_ms: Date.now() - startTime
-        });
         notify(data.error, 'error');
         if (data.gateType === 'usage_limit') {
           handleUpgradePlan('pro');
@@ -368,11 +305,6 @@ export default function App() {
         return;
       }
       if (data.success) {
-        track('ai_request_succeeded', {
-          request_type: 'analysis',
-          latency_ms: Date.now() - startTime,
-          target_language: payload.target_language
-        });
         const newAnalysis = data.analysis;
         setAnalyses([newAnalysis, ...analyses]);
 
@@ -390,11 +322,6 @@ export default function App() {
         return newAnalysis;
       }
     } catch (e) {
-      track('ai_request_failed', {
-        request_type: 'analysis',
-        error_type: 'network_error',
-        latency_ms: Date.now() - startTime
-      });
       console.error('Analysis failed:', e);
     }
   };
@@ -409,11 +336,6 @@ export default function App() {
       });
       const data = await res.json();
       if (data.success) {
-        const target = analyses.find(a => a.id === analysisId);
-        track('result_saved', {
-          item_type: 'analysis',
-          scenario: target?.scenario
-        });
         setAnalyses(analyses.map(a => a.id === analysisId ? { ...a, saved } : a));
 
         // Sync saved status to Firestore
@@ -421,6 +343,7 @@ export default function App() {
           const { auth } = await import('./lib/firebase');
           if (auth.currentUser) {
             const { saveAnalysisToFirestore } = await import('./lib/firestoreService');
+            const target = analyses.find(a => a.id === analysisId);
             if (target) {
               await saveAnalysisToFirestore(auth.currentUser.uid, { ...target, saved });
             }
@@ -511,8 +434,6 @@ export default function App() {
         saveAuthSession(data.token || data.sessionId, data.user, data.profile);
         setUser(data.user);
         setProfile(data.profile);
-        identify(data.user.id, false);
-        track('login_completed', { method: 'email_2fa' });
         setAuthMode(null);
         setTwoFactorPreAuthToken(null);
         setMfaCodeInput('');
@@ -546,8 +467,6 @@ export default function App() {
         saveAuthSession(data.token || data.sessionId, data.user, data.profile);
         setUser(data.user);
         setProfile(data.profile);
-        identify(data.user.id, false);
-        track('login_completed', { method: 'email' });
         setAuthMode(null);
         setPasswordInput('');
         if (data.user?.onboarding_completed) {
@@ -556,7 +475,6 @@ export default function App() {
           setRoute('/onboarding');
         }
       } else if (authMode === 'signup') {
-        track('signup_started', { source: 'auth_modal' });
         const res = await authFetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -574,8 +492,6 @@ export default function App() {
         saveAuthSession(data.token || data.sessionId, data.user, data.profile);
         setUser(data.user);
         setProfile(data.profile);
-        identify(data.user.id, true);
-        track('signup_completed', { method: 'email' });
         setAuthMode(null);
         setPasswordInput('');
         setNameInput('');
@@ -592,8 +508,6 @@ export default function App() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      track('logout_completed', {});
-      resetIdentity();
       try {
         const { auth } = await import('./lib/firebase');
         const { signOut } = await import('firebase/auth');
@@ -635,8 +549,6 @@ export default function App() {
             saveAuthSession(undefined, u, p);
             setUser(u);
             setProfile(p);
-            identify(u.id, false);
-            track('login_completed', { method: 'email' });
             if (u.onboarding_completed) {
               setRoute('/app/dashboard');
             } else {
@@ -655,8 +567,6 @@ export default function App() {
             saveAuthSession(undefined, u, p);
             setUser(u);
             setProfile(p);
-            identify(u.id, true);
-            track('signup_completed', { method: 'email' });
             if (u.onboarding_completed) {
               setRoute('/app/dashboard');
             } else {
@@ -672,8 +582,6 @@ export default function App() {
       return (
         <LogoutPage 
           onLogoutComplete={() => {
-            track('logout_completed', {});
-            resetIdentity();
             clearAuthSession();
             setUser(null);
             setProfile(null);
@@ -1225,8 +1133,6 @@ export default function App() {
             saveAuthSession(undefined, u, p);
             setUser(u);
             setProfile(p);
-            identify(u.id, authMode === 'signup');
-            track(authMode === 'signup' ? 'signup_completed' : 'login_completed', { method: 'modal' });
             if (u.onboarding_completed) {
               setRoute('/app/dashboard');
             } else {
@@ -1236,9 +1142,6 @@ export default function App() {
           onNavigateToOnboarding={() => setRoute('/onboarding')}
         />
       )}
-
-      {/* Global GDPR/CCPA Analytics & Replay Consent Banner */}
-      <ConsentBanner />
     </div>
   );
 }

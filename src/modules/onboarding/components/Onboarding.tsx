@@ -3,19 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, Check, Sun, Moon } from 'lucide-react';
 import { User, UserProfile } from '../../../types';
 import { Button } from '../../../components/ui/Button';
-import { track } from '../../../lib/analytics';
-
-const STEP_TITLES: Record<number, string> = {
-  1: 'Personalize Your Account',
-  2: 'Communication Style Fingerprint',
-  3: 'Risk Habit Patterns',
-  4: 'Desired Strategic Tone',
-  5: 'Summary & Launch'
-};
 
 interface OnboardingProps {
   user: User;
@@ -100,21 +91,6 @@ export default function Onboarding({ user, onComplete, theme: externalTheme, onT
   const [tonePref, setTonePref] = useState<string>('kind but direct');
   const [scenariosHelp, setScenariosHelp] = useState<string>('boundaries');
 
-  const isCompletedRef = useRef(false);
-  const currentStepRef = useRef(step);
-  currentStepRef.current = step;
-
-  useEffect(() => {
-    track('onboarding_started', { initial_scenario: useCase });
-    track('onboarding_step_viewed', { step_number: 1, step_title: STEP_TITLES[1] });
-
-    return () => {
-      if (!isCompletedRef.current && currentStepRef.current < 5) {
-        track('onboarding_abandoned', { last_step: currentStepRef.current, reason: 'navigated_away' });
-      }
-    };
-  }, []);
-
   // Internal theme tracking fallback if external handler is not provided
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -148,14 +124,9 @@ export default function Onboarding({ user, onComplete, theme: externalTheme, onT
   };
 
   const handleNext = () => {
-    track('onboarding_step_completed', { step_number: step, step_title: STEP_TITLES[step] });
-
     if (step < 5) {
-      const nextStep = step + 1;
-      setStep(nextStep);
-      track('onboarding_step_viewed', { step_number: nextStep, step_title: STEP_TITLES[nextStep] });
+      setStep(step + 1);
     } else {
-      isCompletedRef.current = true;
       // Complete and submit profile adjustments
       onComplete({
         communication_style: style,

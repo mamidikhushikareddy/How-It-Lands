@@ -17,7 +17,6 @@ import { Button } from '../../../components/ui/Button';
 import { hasFeatureAccess, FEATURE_GATES } from '../../../lib/subscriptionConfig';
 import LockedFeatureOverlay from '../../../components/ui/LockedFeatureOverlay';
 import { authFetch } from '../../../lib/authStorage';
-import { track, getMessageLengthBracket } from '../../../lib/analytics';
 
 interface AnalyzeWorkspaceProps {
   userId: string;
@@ -417,17 +416,8 @@ export default function AnalyzeWorkspace({
     setCoachChat(nextChat);
     setCoachLoading(true);
 
-    const startTime = performance.now();
-    const effectiveLang = activeAnalysis?.target_language || (targetLanguage === 'custom' ? customLanguageText.trim() : targetLanguage);
-
-    track('ai_request_started', {
-      request_type: 'coach',
-      input_length_bracket: getMessageLengthBracket(userText),
-      scenario: activeAnalysis?.scenario || scenario,
-      target_language: effectiveLang || 'same'
-    });
-
     try {
+      const effectiveLang = activeAnalysis?.target_language || (targetLanguage === 'custom' ? customLanguageText.trim() : targetLanguage);
       const res = await authFetch('/api/analysis/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -446,8 +436,6 @@ export default function AnalyzeWorkspace({
         })
       });
 
-      const latencyMs = Math.round(performance.now() - startTime);
-
       if (res.ok) {
         const data = await res.json();
         const responseText = data.coachResponse || "I've reviewed your request. Let's keep refining this message.";
@@ -460,35 +448,14 @@ export default function AnalyzeWorkspace({
           status: 'sent' as const
         };
         setCoachChat(prev => [...prev, coachMsg]);
-
-        track('ai_request_succeeded', {
-          request_type: 'coach',
-          latency_ms: latencyMs,
-          turn_count: nextChat.length + 1,
-          target_language: effectiveLang || 'same'
-        });
       } else {
         const errData = await res.json().catch(() => ({}));
         const errMsg = errData.error || "The coaching service encountered a momentary issue. Click retry to send your request again.";
         setCoachError(errMsg);
-
-        track('ai_request_failed', {
-          request_type: 'coach',
-          latency_ms: latencyMs,
-          error_type: 'coach_error',
-          error_code: res.status
-        });
       }
     } catch (err: any) {
-      const latencyMs = Math.round(performance.now() - startTime);
       console.error("Coach request error:", err);
       setCoachError(err?.message || "Network gap. Please click retry.");
-
-      track('ai_request_failed', {
-        request_type: 'coach',
-        latency_ms: latencyMs,
-        error_type: 'coach_network_exception'
-      });
     } finally {
       setCoachLoading(false);
     }
@@ -510,7 +477,6 @@ export default function AnalyzeWorkspace({
 
   const handleCopyCoachRewrite = (text: string, msgId: string) => {
     navigator.clipboard.writeText(text);
-    track('result_copied', { item_type: 'rewrite', variant_type: 'coach_suggestion' });
     setCoachCopiedId(msgId);
     setTimeout(() => {
       setCoachCopiedId(null);
@@ -692,7 +658,6 @@ export default function AnalyzeWorkspace({
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    track('result_copied', { item_type: 'rewrite', variant_type: label });
     setCopiedState(label);
     setTimeout(() => setCopiedState(null), 2000);
   };
@@ -880,7 +845,6 @@ export default function AnalyzeWorkspace({
           <textarea
             value={originalMessage}
             onChange={(e) => setOriginalMessage(e.target.value)}
-            data-clarity-mask="true"
             placeholder="Paste your draft text message, email, DM, or client response here... (or click Dictate to speak your mind)"
             className="w-full h-40 p-4 rounded-xl bg-slate-50 dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-xs text-slate-900 dark:text-slate-100 focus:outline-none resize-none leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 font-light font-sans"
           />
@@ -1148,6 +1112,11 @@ export default function AnalyzeWorkspace({
         <div className="space-y-3.5 bg-slate-50 dark:bg-[#10141C] p-4 rounded-xl border border-slate-200 dark:border-white/10">
           <div className="flex justify-between items-center">
             <span className="text-[10px] uppercase font-mono tracking-widest text-slate-900 dark:text-slate-100 font-semibold">Custom Tone Controls</span>
+            {userPlan === 'free' && (
+              <span className="text-[9px] bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                🔒 PRO CALIBRATION
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -1168,9 +1137,10 @@ export default function AnalyzeWorkspace({
                   type="range"
                   min="0"
                   max="100"
+                  disabled={userPlan === 'free'}
                   value={toneSettings[slider.key as keyof ToneSettings]}
                   onChange={(e) => handleSliderChange(slider.key as keyof ToneSettings, parseInt(e.target.value))}
-                  className="w-full h-1 !bg-[#FAF6CF] rounded appearance-none cursor-pointer accent-[#1D1818]"
+                  className={`w-full h-1 !bg-[#FAF6CF] rounded appearance-none cursor-pointer ${userPlan === 'free' ? 'opacity-20 cursor-not-allowed' : 'accent-[#1D1818]'}`}
                 />
               </div>
             ))}
@@ -2051,7 +2021,7 @@ export default function AnalyzeWorkspace({
                 
                 <div className="bg-slate-50 dark:bg-[#10141C] rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col min-h-[340px] max-h-[480px]">
                   {/* Chat history */}
-                  <div className="flex-1 p-4 space-y-3.5 overflow-y-auto text-xs font-sans scrollbar-thin" data-clarity-mask="true">
+                  <div className="flex-1 p-4 space-y-3.5 overflow-y-auto text-xs font-sans scrollbar-thin">
                     {coachChat.map((msg, idx) => {
                       const isUser = msg.role === 'user';
                       let mainText = msg.message;
@@ -2209,7 +2179,6 @@ export default function AnalyzeWorkspace({
                       type="text" 
                       value={coachInput}
                       onChange={(e) => setCoachInput(e.target.value)}
-                      data-clarity-mask="true"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
