@@ -5,9 +5,13 @@
 
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+
+const __filename = process.argv[1] || '';
+const __dirname = path.dirname(__filename);
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { loadDB, saveDB, setDbUserContext } from './server/db';
@@ -149,9 +153,16 @@ function enforceUserRoleGovernance(user: any): void {
  */
 let firebaseConfig: any = null;
 try {
-  const cfgPath = path.resolve(__dirname, 'firebase-applet-config.json');
-  if (fs.existsSync(cfgPath)) {
-    firebaseConfig = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  const candidatePaths = [
+    path.resolve(process.cwd(), 'firebase-applet-config.json'),
+    path.resolve(__dirname, 'firebase-applet-config.json'),
+    path.resolve(__dirname, '..', 'firebase-applet-config.json')
+  ];
+  for (const cfgPath of candidatePaths) {
+    if (fs.existsSync(cfgPath)) {
+      firebaseConfig = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      break;
+    }
   }
 } catch (e) {
   console.warn('[CONFIG] Could not read firebase-applet-config.json:', e);

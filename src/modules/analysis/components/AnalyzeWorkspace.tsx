@@ -14,9 +14,8 @@ import {
 import { Analysis, ToneSettings } from '../../../types';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { hasFeatureAccess, FEATURE_GATES } from '../../../lib/subscriptionConfig';
-import LockedFeatureOverlay from '../../../components/ui/LockedFeatureOverlay';
 import { authFetch } from '../../../lib/authStorage';
+import { track, getMessageLengthBracket } from '../../../lib/analytics';
 
 interface AnalyzeWorkspaceProps {
   userId: string;
@@ -416,8 +415,17 @@ export default function AnalyzeWorkspace({
     setCoachChat(nextChat);
     setCoachLoading(true);
 
+    const startTime = performance.now();
+    const effectiveLang = activeAnalysis?.target_language || (targetLanguage === 'custom' ? customLanguageText.trim() : targetLanguage);
+
+    track('ai_request_started', {
+      request_type: 'coach',
+      input_length_bracket: getMessageLengthBracket(userText),
+      scenario: activeAnalysis?.scenario || scenario,
+      target_language: effectiveLang || 'same'
+    });
+
     try {
-      const effectiveLang = activeAnalysis?.target_language || (targetLanguage === 'custom' ? customLanguageText.trim() : targetLanguage);
       const res = await authFetch('/api/analysis/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -436,6 +444,8 @@ export default function AnalyzeWorkspace({
         })
       });
 
+      const latencyMs = Math.round(performance.now() - startTime);
+
       if (res.ok) {
         const data = await res.json();
         const responseText = data.coachResponse || "I've reviewed your request. Let's keep refining this message.";
@@ -448,14 +458,35 @@ export default function AnalyzeWorkspace({
           status: 'sent' as const
         };
         setCoachChat(prev => [...prev, coachMsg]);
+
+        track('ai_request_succeeded', {
+          request_type: 'coach',
+          latency_ms: latencyMs,
+          turn_count: nextChat.length + 1,
+          target_language: effectiveLang || 'same'
+        });
       } else {
         const errData = await res.json().catch(() => ({}));
         const errMsg = errData.error || "The coaching service encountered a momentary issue. Click retry to send your request again.";
         setCoachError(errMsg);
+
+        track('ai_request_failed', {
+          request_type: 'coach',
+          latency_ms: latencyMs,
+          error_type: 'coach_error',
+          error_code: res.status
+        });
       }
     } catch (err: any) {
+      const latencyMs = Math.round(performance.now() - startTime);
       console.error("Coach request error:", err);
       setCoachError(err?.message || "Network gap. Please click retry.");
+
+      track('ai_request_failed', {
+        request_type: 'coach',
+        latency_ms: latencyMs,
+        error_type: 'coach_network_exception'
+      });
     } finally {
       setCoachLoading(false);
     }
@@ -477,6 +508,7 @@ export default function AnalyzeWorkspace({
 
   const handleCopyCoachRewrite = (text: string, msgId: string) => {
     navigator.clipboard.writeText(text);
+    track('result_copied', { item_type: 'rewrite', variant_type: 'coach_suggestion' });
     setCoachCopiedId(msgId);
     setTimeout(() => {
       setCoachCopiedId(null);
@@ -658,6 +690,7 @@ export default function AnalyzeWorkspace({
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
+    track('result_copied', { item_type: 'rewrite', variant_type: label });
     setCopiedState(label);
     setTimeout(() => setCopiedState(null), 2000);
   };
@@ -845,6 +878,7 @@ export default function AnalyzeWorkspace({
           <textarea
             value={originalMessage}
             onChange={(e) => setOriginalMessage(e.target.value)}
+            data-clarity-mask="true"
             placeholder="Paste your draft text message, email, DM, or client response here... (or click Dictate to speak your mind)"
             className="w-full h-40 p-4 rounded-xl bg-slate-50 dark:bg-[#10141C] border border-slate-300 dark:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-xs text-slate-900 dark:text-slate-100 focus:outline-none resize-none leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 font-light font-sans"
           />
@@ -1112,11 +1146,6 @@ export default function AnalyzeWorkspace({
         <div className="space-y-3.5 bg-slate-50 dark:bg-[#10141C] p-4 rounded-xl border border-slate-200 dark:border-white/10">
           <div className="flex justify-between items-center">
             <span className="text-[10px] uppercase font-mono tracking-widest text-slate-900 dark:text-slate-100 font-semibold">Custom Tone Controls</span>
-            {userPlan === 'free' && (
-              <span className="text-[9px] bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-100 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
-                🔒 PRO CALIBRATION
-              </span>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -1137,10 +1166,9 @@ export default function AnalyzeWorkspace({
                   type="range"
                   min="0"
                   max="100"
-                  disabled={userPlan === 'free'}
                   value={toneSettings[slider.key as keyof ToneSettings]}
                   onChange={(e) => handleSliderChange(slider.key as keyof ToneSettings, parseInt(e.target.value))}
-                  className={`w-full h-1 !bg-[#FAF6CF] rounded appearance-none cursor-pointer ${userPlan === 'free' ? 'opacity-20 cursor-not-allowed' : 'accent-[#1D1818]'}`}
+                  className="w-full h-1 !bg-[#FAF6CF] rounded appearance-none cursor-pointer accent-[#1D1818]"
                 />
               </div>
             ))}
@@ -1426,7 +1454,7 @@ export default function AnalyzeWorkspace({
 
                       {/* Tone adjustment quick actions */}
                       <div className="space-y-2 bg-slate-50 dark:bg-[#10141C] p-4 rounded border border-slate-200 dark:border-white/10">
-                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 block">ITERATIVE REFINERS (PRO & PLUS)</span>
+                        <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 block">ITERATIVE REFINERS</span>
                         <div className="flex flex-wrap gap-1.5">
                           <button onClick={() => handleRefine('Make it slightly warmer and more empathetic')} className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 text-slate-800 dark:text-slate-200 text-[10px] font-mono transition cursor-pointer shadow-xs">
                             + Empathy Cushion
@@ -1555,53 +1583,42 @@ export default function AnalyzeWorkspace({
               </div>
             </div>
 
-            {/* Gated Risk Heatmap (Plus gate) */}
-            <LockedFeatureOverlay 
-              gate={FEATURE_GATES.riskHeatmap} 
-              onUpgradeClick={onUpgradePlan} 
-              allowed={hasFeatureAccess(userPlan as any, 'riskHeatmap', trialActive).allowed}
-            >
-              <Card className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-                  <Activity className="w-4 h-4 text-[#C97A7A]" />
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 dark:text-slate-300 font-semibold block">Interactive Risk Heatmap Highlights</span>
+            {/* Risk Heatmap */}
+            <Card className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
+                <Activity className="w-4 h-4 text-[#C97A7A]" />
+                <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 dark:text-slate-300 font-semibold block">Interactive Risk Heatmap Highlights</span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-sans font-light leading-relaxed">
+                Latent friction risks, cognitive defensive blocks, and passive-aggressive indicators mapped to specific terms.
+              </p>
+              
+              <div className="bg-slate-50 dark:bg-[#10141C] p-4 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-sans leading-relaxed space-y-3">
+                <div className="text-xs font-light text-slate-900 dark:text-slate-100/90 leading-relaxed">
+                  "I <span className="bg-[#C97A7A]/20 text-[#C97A7A] px-1 rounded border border-[#C97A7A]/15 cursor-help" title="Passive-aggressive opening: reduces promptness confidence.">just wanted to follow up</span> on the project deliverables. I was hoping you could give an update, <span className="bg-[#D29F6F]/20 text-[#D29F6F] px-1 rounded border border-[#D29F6F]/15 cursor-help" title="Defensive buffer: signals apprehension or lack of expectation rigidity.">if it's not too much trouble</span>, since we're already late."
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-sans font-light leading-relaxed">
-                  Latent friction risks, cognitive defensive blocks, and passive-aggressive indicators mapped to specific terms.
-                </p>
                 
-                <div className="bg-slate-50 dark:bg-[#10141C] p-4 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-sans leading-relaxed space-y-3">
-                  <div className="text-xs font-light text-slate-900 dark:text-slate-100/90 leading-relaxed">
-                    "I <span className="bg-[#C97A7A]/20 text-[#C97A7A] px-1 rounded border border-[#C97A7A]/15 cursor-help" title="Passive-aggressive opening: reduces promptness confidence.">just wanted to follow up</span> on the project deliverables. I was hoping you could give an update, <span className="bg-[#D29F6F]/20 text-[#D29F6F] px-1 rounded border border-[#D29F6F]/15 cursor-help" title="Defensive buffer: signals apprehension or lack of expectation rigidity.">if it's not too much trouble</span>, since we're already late."
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono">
-                    <div className="bg-slate-50 dark:bg-[#1A202C]/60 p-2.5 rounded-lg border border-red-950/20 flex gap-2 items-start">
-                      <span className="w-1.5 h-1.5 bg-[#C97A7A] rounded-full mt-1.5 flex-shrink-0" />
-                      <div>
-                        <span className="text-[#C97A7A] font-bold block">SUBMISSIVE / APOLOGETIC APERTURE</span>
-                        Signals lack of authority; invites negotiation or postponement.
-                      </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono">
+                  <div className="bg-slate-50 dark:bg-[#1A202C]/60 p-2.5 rounded-lg border border-red-950/20 flex gap-2 items-start">
+                    <span className="w-1.5 h-1.5 bg-[#C97A7A] rounded-full mt-1.5 flex-shrink-0" />
+                    <div>
+                      <span className="text-[#C97A7A] font-bold block">SUBMISSIVE / APOLOGETIC APERTURE</span>
+                      Signals lack of authority; invites negotiation or postponement.
                     </div>
-                    <div className="bg-slate-50 dark:bg-[#1A202C]/60 p-2.5 rounded-lg border border-orange-950/20 flex gap-2 items-start">
-                      <span className="w-1.5 h-1.5 bg-[#D29F6F] rounded-full mt-1.5 flex-shrink-0" />
-                      <div>
-                        <span className="text-[#D29F6F] font-bold block">COGNITIVE DEFENSIVE SHIELD</span>
-                        Buffers the request unnecessarily, making the boundary feel optional.
-                      </div>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-[#1A202C]/60 p-2.5 rounded-lg border border-orange-950/20 flex gap-2 items-start">
+                    <span className="w-1.5 h-1.5 bg-[#D29F6F] rounded-full mt-1.5 flex-shrink-0" />
+                    <div>
+                      <span className="text-[#D29F6F] font-bold block">COGNITIVE DEFENSIVE SHIELD</span>
+                      Buffers the request unnecessarily, making the boundary feel optional.
                     </div>
                   </div>
                 </div>
-              </Card>
-            </LockedFeatureOverlay>
+              </div>
+            </Card>
 
-            {/* Gated Emotional Blueprint Map (Plus gate) */}
-            <LockedFeatureOverlay 
-              gate={FEATURE_GATES.emotionalBlueprint} 
-              onUpgradeClick={onUpgradePlan} 
-              allowed={hasFeatureAccess(userPlan as any, 'emotionalBlueprint', trialActive).allowed}
-            >
-              <Card className="space-y-4">
+            {/* Emotional Blueprint Map */}
+            <Card className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
                   <div className="flex items-center gap-2">
                     <LineChart className="w-4 h-4 text-[#00E5FF]" />
@@ -1881,40 +1898,33 @@ export default function AnalyzeWorkspace({
                   );
                 })()}
               </Card>
-            </LockedFeatureOverlay>
 
-            {/* Gated Likely Interpretation Diagnostics (Plus gate) */}
-            <LockedFeatureOverlay 
-              gate={FEATURE_GATES.likelyInterpretation} 
-              onUpgradeClick={onUpgradePlan} 
-              allowed={hasFeatureAccess(userPlan as any, 'likelyInterpretation', trialActive).allowed}
-            >
-              <Card className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-                  <Compass className="w-4 h-4 text-[#D29F6F]" />
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 dark:text-slate-300 font-semibold block">Likely Interpretation Diagnostics</span>
+            {/* Likely Interpretation Diagnostics */}
+            <Card className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
+                <Compass className="w-4 h-4 text-[#D29F6F]" />
+                <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 dark:text-slate-300 font-semibold block">Likely Interpretation Diagnostics</span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-sans font-light leading-relaxed">
+                How the recipient is structurally projected to digest this draft, with clear subtext and invitation summaries.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
+                <div className="bg-slate-50 dark:bg-[#10141C] p-4 rounded border border-slate-200 dark:border-white/10 space-y-1">
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono block uppercase">Likely Subtext</span>
+                  <p className="text-slate-900 dark:text-slate-100 leading-relaxed italic font-light">
+                    "{activeAnalysis.output_json.how_it_may_be_read?.subtext || 'Unintentionally signaling doubt or hesitation.'}"
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-sans font-light leading-relaxed">
-                  How the recipient is structurally projected to digest this draft, with clear subtext and invitation summaries.
-                </p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
-                  <div className="bg-slate-50 dark:bg-[#10141C] p-4 rounded border border-slate-200 dark:border-white/10 space-y-1">
-                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono block uppercase">Likely Subtext</span>
-                    <p className="text-slate-900 dark:text-slate-100 leading-relaxed italic font-light">
-                      "{activeAnalysis.output_json.how_it_may_be_read?.subtext || 'Unintentionally signaling doubt or hesitation.'}"
-                    </p>
-                  </div>
 
-                  <div className="bg-slate-50 dark:bg-[#10141C] p-4 rounded border border-slate-200 dark:border-white/10 space-y-1">
-                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono block uppercase">Invited Response Pattern</span>
-                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-light">
-                      {activeAnalysis.output_json.how_it_may_be_read?.invited_responses || 'Likely to query terms, negotiate delay, or push boundary.'}
-                    </p>
-                  </div>
+                <div className="bg-slate-50 dark:bg-[#10141C] p-4 rounded border border-slate-200 dark:border-white/10 space-y-1">
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono block uppercase">Invited Response Pattern</span>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-light">
+                    {activeAnalysis.output_json.how_it_may_be_read?.invited_responses || 'Likely to query terms, negotiate delay, or push boundary.'}
+                  </p>
                 </div>
-              </Card>
-            </LockedFeatureOverlay>
+              </div>
+            </Card>
 
             {/* Side-by-side Diagnostic Insights */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1990,13 +2000,8 @@ export default function AnalyzeWorkspace({
               </div>
             </Card>
 
-            {/* Gated AI Communication Coach (Pro gate) */}
-            <LockedFeatureOverlay 
-              gate={FEATURE_GATES.communicationCoach} 
-              onUpgradeClick={onUpgradePlan} 
-              allowed={hasFeatureAccess(userPlan as any, 'communicationCoach', trialActive).allowed}
-            >
-              <Card className="space-y-4">
+            {/* AI Communication Coach */}
+            <Card className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-[#00E5FF]" />
@@ -2021,7 +2026,7 @@ export default function AnalyzeWorkspace({
                 
                 <div className="bg-slate-50 dark:bg-[#10141C] rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden flex flex-col min-h-[340px] max-h-[480px]">
                   {/* Chat history */}
-                  <div className="flex-1 p-4 space-y-3.5 overflow-y-auto text-xs font-sans scrollbar-thin">
+                  <div className="flex-1 p-4 space-y-3.5 overflow-y-auto text-xs font-sans scrollbar-thin" data-clarity-mask="true">
                     {coachChat.map((msg, idx) => {
                       const isUser = msg.role === 'user';
                       let mainText = msg.message;
@@ -2179,6 +2184,7 @@ export default function AnalyzeWorkspace({
                       type="text" 
                       value={coachInput}
                       onChange={(e) => setCoachInput(e.target.value)}
+                      data-clarity-mask="true"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -2198,15 +2204,9 @@ export default function AnalyzeWorkspace({
                   </form>
                 </div>
               </Card>
-            </LockedFeatureOverlay>
 
-            {/* Gated Scenario Tree Simulator (Pro gate) */}
-            <LockedFeatureOverlay 
-              gate={FEATURE_GATES.scenarioSimulator} 
-              onUpgradeClick={onUpgradePlan} 
-              allowed={hasFeatureAccess(userPlan as any, 'scenarioSimulator', trialActive).allowed}
-            >
-              <Card className="space-y-4">
+            {/* Scenario Tree Simulator */}
+            <Card className="space-y-4">
                 <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
                   <Compass className="w-4 h-4 text-[#00E5FF]" />
                   <span className="text-[10px] uppercase font-mono tracking-widest text-slate-600 dark:text-slate-300 font-semibold block">Scenario Tree Simulator</span>
@@ -2302,7 +2302,6 @@ export default function AnalyzeWorkspace({
                   )}
                 </div>
               </Card>
-            </LockedFeatureOverlay>
 
             {/* Anticipatory response pathways */}
             {activeAnalysis.output_json.follow_ups && activeAnalysis.output_json.follow_ups.length > 0 && (

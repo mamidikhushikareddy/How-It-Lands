@@ -10,6 +10,7 @@ import {
   Send, RefreshCw, Mail, Phone, Lock, Eye, Trash, Bookmark
 } from 'lucide-react';
 import { SEED_LANDING_EXAMPLES } from '../../../seedData';
+import { track } from '../../../lib/analytics';
 
 interface MarketingProps {
   onNavigate: (route: string) => void;
@@ -81,7 +82,10 @@ export default function Marketing({ onNavigate, onLogin }: MarketingProps) {
               Sign In
             </button>
             <button 
-              onClick={() => onNavigate('/signup')}
+              onClick={() => {
+                track('signup_started', { source: 'landing_nav' });
+                onNavigate('/signup');
+              }}
               className="px-4 py-2 rounded bg-[#FAF8F5] text-[#111315] text-xs font-medium hover:bg-[#FAF8F5]/90 transition cursor-pointer font-sans"
             >
               Get Started Free
@@ -109,7 +113,10 @@ export default function Marketing({ onNavigate, onLogin }: MarketingProps) {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <button 
-              onClick={() => onNavigate('/signup')}
+              onClick={() => {
+                track('signup_started', { source: 'landing_hero' });
+                onNavigate('/signup');
+              }}
               className="w-full sm:w-auto px-6 py-3 rounded bg-[#FAF8F5] text-[#111315] text-xs font-medium hover:bg-[#FAF8F5]/90 transition flex items-center justify-center gap-2 cursor-pointer font-sans"
             >
               Analyze Your Message
