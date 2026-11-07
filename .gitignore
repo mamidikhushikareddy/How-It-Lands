@@ -1,8 +1,23 @@
-node_modules/
-build/
-dist/
-coverage/
-.DS_Store
-*.log
-.env*
+# Environment variables and credentials
+.env
+.env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*service-account*.json
+*firebase-adminsdk*.json
+credentials.json
+secrets.json
+
+# Dependencies and build output
+node_modules/
+dist/
+.next/
+.venv/
+coverage/
+*.log
+
+# Local data
+db.json
